@@ -1,0 +1,1947 @@
+// Move bytecode v6
+module f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138.predict {
+use fb28c4cbc6865bd1c897d26aecbe1f8792d1509a20ffec692c800660cbec6982::math;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::market_key;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::math as 0math;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::oracle;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::oracle_config;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::plp;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::predict_manager;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::pricing_config;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::range_key;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::rate_limiter;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::risk_config;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::treasury_config;
+use f5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138::vault;
+use 0000000000000000000000000000000000000000000000000000000000000001::option;
+use 0000000000000000000000000000000000000000000000000000000000000001::type_name;
+use 0000000000000000000000000000000000000000000000000000000000000001::u64;
+use 0000000000000000000000000000000000000000000000000000000000000002::balance;
+use 0000000000000000000000000000000000000000000000000000000000000002::clock;
+use 0000000000000000000000000000000000000000000000000000000000000002::coin;
+use 0000000000000000000000000000000000000000000000000000000000000002::coin_registry;
+use 0000000000000000000000000000000000000000000000000000000000000002::event;
+use 0000000000000000000000000000000000000000000000000000000000000002::object;
+use 0000000000000000000000000000000000000000000000000000000000000002::transfer;
+use 0000000000000000000000000000000000000000000000000000000000000002::tx_context;
+use 0000000000000000000000000000000000000000000000000000000000000002::vec_set;
+
+struct PositionMinted has copy, drop, store {
+	predict_id: ID,
+	manager_id: ID,
+	trader: address,
+	quote_asset: TypeName,
+	oracle_id: ID,
+	expiry: u64,
+	strike: u64,
+	is_up: bool,
+	quantity: u64,
+	cost: u64,
+	ask_price: u64
+}
+
+struct PositionRedeemed has copy, drop, store {
+	predict_id: ID,
+	manager_id: ID,
+	owner: address,
+	executor: address,
+	quote_asset: TypeName,
+	oracle_id: ID,
+	expiry: u64,
+	strike: u64,
+	is_up: bool,
+	quantity: u64,
+	payout: u64,
+	bid_price: u64,
+	is_settled: bool
+}
+
+struct RangeMinted has copy, drop, store {
+	predict_id: ID,
+	manager_id: ID,
+	trader: address,
+	quote_asset: TypeName,
+	oracle_id: ID,
+	expiry: u64,
+	lower_strike: u64,
+	higher_strike: u64,
+	quantity: u64,
+	cost: u64,
+	ask_price: u64
+}
+
+struct RangeRedeemed has copy, drop, store {
+	predict_id: ID,
+	manager_id: ID,
+	trader: address,
+	quote_asset: TypeName,
+	oracle_id: ID,
+	expiry: u64,
+	lower_strike: u64,
+	higher_strike: u64,
+	quantity: u64,
+	payout: u64,
+	bid_price: u64,
+	is_settled: bool
+}
+
+struct TradingPauseUpdated has copy, drop, store {
+	predict_id: ID,
+	paused: bool
+}
+
+struct PricingConfigUpdated has copy, drop, store {
+	predict_id: ID,
+	base_spread: u64,
+	min_spread: u64,
+	utilization_multiplier: u64,
+	min_ask_price: u64,
+	max_ask_price: u64
+}
+
+struct OracleAskBoundsSet has copy, drop, store {
+	predict_id: ID,
+	oracle_id: ID,
+	min_ask_price: u64,
+	max_ask_price: u64
+}
+
+struct OracleAskBoundsCleared has copy, drop, store {
+	predict_id: ID,
+	oracle_id: ID
+}
+
+struct RiskConfigUpdated has copy, drop, store {
+	predict_id: ID,
+	max_total_exposure_pct: u64
+}
+
+struct QuoteAssetEnabled has copy, drop, store {
+	predict_id: ID,
+	quote_asset: TypeName
+}
+
+struct QuoteAssetDisabled has copy, drop, store {
+	predict_id: ID,
+	quote_asset: TypeName
+}
+
+struct Supplied has copy, drop, store {
+	predict_id: ID,
+	supplier: address,
+	quote_asset: TypeName,
+	amount: u64,
+	shares_minted: u64
+}
+
+struct Withdrawn has copy, drop, store {
+	predict_id: ID,
+	withdrawer: address,
+	quote_asset: TypeName,
+	amount: u64,
+	shares_burned: u64
+}
+
+struct Predict has key {
+	id: UID,
+	vault: Vault,
+	treasury_cap: TreasuryCap<PLP>,
+	pricing_config: PricingConfig,
+	risk_config: RiskConfig,
+	treasury_config: TreasuryConfig,
+	oracle_config: OracleConfig,
+	withdrawal_limiter: RateLimiter,
+	trading_paused: bool
+}
+
+public create_manager(Arg0: &mut TxContext): ID {
+B0:
+	0: MoveLoc[0](Arg0: &mut TxContext)
+	1: Call predict_manager::new(&mut TxContext): ID
+	2: Ret
+}
+
+public get_trade_amounts(Arg0: &Predict, Arg1: &OracleSVI, Arg2: MarketKey, Arg3: u64, Arg4: &Clock): u64 * u64 {
+L5:	loc0: u64
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: MoveLoc[1](Arg1: &OracleSVI)
+	2: MoveLoc[2](Arg2: MarketKey)
+	3: MoveLoc[4](Arg4: &Clock)
+	4: Call trade_prices(&Predict, &OracleSVI, MarketKey, &Clock): u64 * u64
+	5: StLoc[5](loc0: u64)
+	6: CopyLoc[3](Arg3: u64)
+	7: Call math::mul(u64, u64): u64
+	8: MoveLoc[5](loc0: u64)
+	9: MoveLoc[3](Arg3: u64)
+	10: Call math::mul(u64, u64): u64
+	11: Ret
+}
+
+public ask_bounds(Arg0: &Predict, Arg1: ID): u64 * u64 {
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: MoveLoc[1](Arg1: ID)
+	2: Call resolve_ask_bounds(&Predict, ID): u64 * u64
+	3: Ret
+}
+
+public mint<Ty0>(Arg0: &mut Predict, Arg1: &mut PredictManager, Arg2: &OracleSVI, Arg3: MarketKey, Arg4: u64, Arg5: &Clock, Arg6: &mut TxContext) {
+L7:	loc0: u64
+L8:	loc1: u64
+L9:	loc2: bool
+L10:	loc3: Balance<Ty0>
+L11:	loc4: u64
+B0:
+	0: CopyLoc[6](Arg6: &mut TxContext)
+	1: FreezeRef
+	2: Call tx_context::sender(&TxContext): address
+	3: CopyLoc[1](Arg1: &mut PredictManager)
+	4: FreezeRef
+	5: Call predict_manager::owner(&PredictManager): address
+	6: Eq
+	7: BrFalse(9)
+B1:
+	8: Branch(21)
+B2:
+	9: MoveLoc[0](Arg0: &mut Predict)
+	10: Pop
+	11: MoveLoc[2](Arg2: &OracleSVI)
+	12: Pop
+	13: MoveLoc[1](Arg1: &mut PredictManager)
+	14: Pop
+	15: MoveLoc[6](Arg6: &mut TxContext)
+	16: Pop
+	17: MoveLoc[5](Arg5: &Clock)
+	18: Pop
+	19: LdConst[1](u64: 1)
+	20: Abort
+B3:
+	21: CopyLoc[0](Arg0: &mut Predict)
+	22: ImmBorrowField[0](Predict.trading_paused: bool)
+	23: ReadRef
+	24: Not
+	25: BrFalse(27)
+B4:
+	26: Branch(39)
+B5:
+	27: MoveLoc[0](Arg0: &mut Predict)
+	28: Pop
+	29: MoveLoc[2](Arg2: &OracleSVI)
+	30: Pop
+	31: MoveLoc[1](Arg1: &mut PredictManager)
+	32: Pop
+	33: MoveLoc[6](Arg6: &mut TxContext)
+	34: Pop
+	35: MoveLoc[5](Arg5: &Clock)
+	36: Pop
+	37: LdConst[0](u64: 0)
+	38: Abort
+B6:
+	39: CopyLoc[4](Arg4: u64)
+	40: LdU64(0)
+	41: Gt
+	42: BrFalse(44)
+B7:
+	43: Branch(56)
+B8:
+	44: MoveLoc[0](Arg0: &mut Predict)
+	45: Pop
+	46: MoveLoc[2](Arg2: &OracleSVI)
+	47: Pop
+	48: MoveLoc[1](Arg1: &mut PredictManager)
+	49: Pop
+	50: MoveLoc[6](Arg6: &mut TxContext)
+	51: Pop
+	52: MoveLoc[5](Arg5: &Clock)
+	53: Pop
+	54: LdConst[3](u64: 3)
+	55: Abort
+B9:
+	56: CopyLoc[0](Arg0: &mut Predict)
+	57: ImmBorrowField[1](Predict.treasury_config: TreasuryConfig)
+	58: Call treasury_config::assert_quote_asset<Ty0>(&TreasuryConfig)
+	59: CopyLoc[0](Arg0: &mut Predict)
+	60: ImmBorrowField[2](Predict.oracle_config: OracleConfig)
+	61: CopyLoc[2](Arg2: &OracleSVI)
+	62: ImmBorrowLoc[3](Arg3: MarketKey)
+	63: Call oracle_config::assert_key_matches(&OracleConfig, &OracleSVI, &MarketKey)
+	64: CopyLoc[2](Arg2: &OracleSVI)
+	65: CopyLoc[5](Arg5: &Clock)
+	66: Call oracle_config::assert_live_oracle(&OracleSVI, &Clock)
+	67: ImmBorrowLoc[3](Arg3: MarketKey)
+	68: Call market_key::strike(&MarketKey): u64
+	69: StLoc[11](loc4: u64)
+	70: ImmBorrowLoc[3](Arg3: MarketKey)
+	71: Call market_key::is_up(&MarketKey): bool
+	72: StLoc[9](loc2: bool)
+	73: CopyLoc[0](Arg0: &mut Predict)
+	74: MutBorrowField[3](Predict.vault: Vault)
+	75: CopyLoc[2](Arg2: &OracleSVI)
+	76: Call oracle::id(&OracleSVI): ID
+	77: CopyLoc[9](loc2: bool)
+	78: CopyLoc[11](loc4: u64)
+	79: CopyLoc[4](Arg4: u64)
+	80: Call vault::insert_position(&mut Vault, ID, bool, u64, u64)
+	81: CopyLoc[0](Arg0: &mut Predict)
+	82: CopyLoc[2](Arg2: &OracleSVI)
+	83: Call refresh_oracle_risk(&mut Predict, &OracleSVI)
+	84: CopyLoc[0](Arg0: &mut Predict)
+	85: FreezeRef
+	86: CopyLoc[2](Arg2: &OracleSVI)
+	87: CopyLoc[3](Arg3: MarketKey)
+	88: MoveLoc[5](Arg5: &Clock)
+	89: Call trade_prices(&Predict, &OracleSVI, MarketKey, &Clock): u64 * u64
+	90: Pop
+	91: StLoc[7](loc0: u64)
+	92: CopyLoc[0](Arg0: &mut Predict)
+	93: FreezeRef
+	94: MoveLoc[2](Arg2: &OracleSVI)
+	95: Call oracle::id(&OracleSVI): ID
+	96: CopyLoc[7](loc0: u64)
+	97: Call assert_mintable_ask(&Predict, ID, u64)
+	98: CopyLoc[7](loc0: u64)
+	99: CopyLoc[4](Arg4: u64)
+	100: Call math::mul(u64, u64): u64
+	101: StLoc[8](loc1: u64)
+	102: CopyLoc[1](Arg1: &mut PredictManager)
+	103: CopyLoc[8](loc1: u64)
+	104: MoveLoc[6](Arg6: &mut TxContext)
+	105: Call predict_manager::withdraw<Ty0>(&mut PredictManager, u64, &mut TxContext): Coin<Ty0>
+	106: Call coin::into_balance<Ty0>(Coin<Ty0>): Balance<Ty0>
+	107: StLoc[10](loc3: Balance<Ty0>)
+	108: CopyLoc[0](Arg0: &mut Predict)
+	109: MutBorrowField[3](Predict.vault: Vault)
+	110: MoveLoc[10](loc3: Balance<Ty0>)
+	111: Call vault::accept_payment<Ty0>(&mut Vault, Balance<Ty0>)
+	112: CopyLoc[0](Arg0: &mut Predict)
+	113: ImmBorrowField[3](Predict.vault: Vault)
+	114: CopyLoc[0](Arg0: &mut Predict)
+	115: ImmBorrowField[4](Predict.risk_config: RiskConfig)
+	116: Call risk_config::max_total_exposure_pct(&RiskConfig): u64
+	117: Call vault::assert_total_exposure(&Vault, u64)
+	118: CopyLoc[1](Arg1: &mut PredictManager)
+	119: CopyLoc[3](Arg3: MarketKey)
+	120: CopyLoc[4](Arg4: u64)
+	121: Call predict_manager::increase_position(&mut PredictManager, MarketKey, u64)
+	122: MoveLoc[0](Arg0: &mut Predict)
+	123: FreezeRef
+	124: Call object::id<Predict>(&Predict): ID
+	125: CopyLoc[1](Arg1: &mut PredictManager)
+	126: FreezeRef
+	127: Call object::id<PredictManager>(&PredictManager): ID
+	128: MoveLoc[1](Arg1: &mut PredictManager)
+	129: FreezeRef
+	130: Call predict_manager::owner(&PredictManager): address
+	131: Call type_name::with_defining_ids<Ty0>(): TypeName
+	132: ImmBorrowLoc[3](Arg3: MarketKey)
+	133: Call market_key::oracle_id(&MarketKey): ID
+	134: ImmBorrowLoc[3](Arg3: MarketKey)
+	135: Call market_key::expiry(&MarketKey): u64
+	136: MoveLoc[11](loc4: u64)
+	137: MoveLoc[9](loc2: bool)
+	138: MoveLoc[4](Arg4: u64)
+	139: MoveLoc[8](loc1: u64)
+	140: MoveLoc[7](loc0: u64)
+	141: Pack[0](PositionMinted)
+	142: Call event::emit<PositionMinted>(PositionMinted)
+	143: Ret
+}
+
+public compact_settled_oracle(Arg0: &mut Predict, Arg1: &OracleSVI, Arg2: &OracleSVICap) {
+L3:	loc0: u64
+B0:
+	0: CopyLoc[1](Arg1: &OracleSVI)
+	1: MoveLoc[2](Arg2: &OracleSVICap)
+	2: Call oracle::assert_authorized_cap(&OracleSVI, &OracleSVICap)
+	3: CopyLoc[1](Arg1: &OracleSVI)
+	4: Call oracle::is_settled(&OracleSVI): bool
+	5: BrFalse(7)
+B1:
+	6: Branch(13)
+B2:
+	7: MoveLoc[0](Arg0: &mut Predict)
+	8: Pop
+	9: MoveLoc[1](Arg1: &OracleSVI)
+	10: Pop
+	11: LdConst[9](u64: 9)
+	12: Abort
+B3:
+	13: CopyLoc[1](Arg1: &OracleSVI)
+	14: Call oracle::settlement_price(&OracleSVI): Option<u64>
+	15: Call option::destroy_some<u64>(Option<u64>): u64
+	16: StLoc[3](loc0: u64)
+	17: MoveLoc[0](Arg0: &mut Predict)
+	18: MutBorrowField[3](Predict.vault: Vault)
+	19: MoveLoc[1](Arg1: &OracleSVI)
+	20: Call oracle::id(&OracleSVI): ID
+	21: MoveLoc[3](loc0: u64)
+	22: Call vault::compact_settled_oracle_if_needed(&mut Vault, ID, u64)
+	23: Ret
+}
+
+public redeem<Ty0>(Arg0: &mut Predict, Arg1: &mut PredictManager, Arg2: &OracleSVI, Arg3: MarketKey, Arg4: u64, Arg5: &Clock, Arg6: &mut TxContext) {
+L7:	loc0: Coin<Ty0>
+B0:
+	0: CopyLoc[6](Arg6: &mut TxContext)
+	1: FreezeRef
+	2: Call tx_context::sender(&TxContext): address
+	3: CopyLoc[1](Arg1: &mut PredictManager)
+	4: FreezeRef
+	5: Call predict_manager::owner(&PredictManager): address
+	6: Eq
+	7: BrFalse(9)
+B1:
+	8: Branch(21)
+B2:
+	9: MoveLoc[0](Arg0: &mut Predict)
+	10: Pop
+	11: MoveLoc[2](Arg2: &OracleSVI)
+	12: Pop
+	13: MoveLoc[1](Arg1: &mut PredictManager)
+	14: Pop
+	15: MoveLoc[6](Arg6: &mut TxContext)
+	16: Pop
+	17: MoveLoc[5](Arg5: &Clock)
+	18: Pop
+	19: LdConst[1](u64: 1)
+	20: Abort
+B3:
+	21: MoveLoc[0](Arg0: &mut Predict)
+	22: CopyLoc[1](Arg1: &mut PredictManager)
+	23: MoveLoc[2](Arg2: &OracleSVI)
+	24: MoveLoc[3](Arg3: MarketKey)
+	25: MoveLoc[4](Arg4: u64)
+	26: MoveLoc[5](Arg5: &Clock)
+	27: CopyLoc[6](Arg6: &mut TxContext)
+	28: Call redeem_internal<Ty0>(&mut Predict, &mut PredictManager, &OracleSVI, MarketKey, u64, &Clock, &mut TxContext): Coin<Ty0>
+	29: StLoc[7](loc0: Coin<Ty0>)
+	30: MoveLoc[1](Arg1: &mut PredictManager)
+	31: MoveLoc[7](loc0: Coin<Ty0>)
+	32: MoveLoc[6](Arg6: &mut TxContext)
+	33: FreezeRef
+	34: Call predict_manager::deposit<Ty0>(&mut PredictManager, Coin<Ty0>, &TxContext)
+	35: Ret
+}
+
+public redeem_permissionless<Ty0>(Arg0: &mut Predict, Arg1: &mut PredictManager, Arg2: &OracleSVI, Arg3: MarketKey, Arg4: u64, Arg5: &Clock, Arg6: &mut TxContext) {
+L7:	loc0: Coin<Ty0>
+B0:
+	0: CopyLoc[2](Arg2: &OracleSVI)
+	1: Call oracle::is_settled(&OracleSVI): bool
+	2: BrFalse(4)
+B1:
+	3: Branch(16)
+B2:
+	4: MoveLoc[0](Arg0: &mut Predict)
+	5: Pop
+	6: MoveLoc[2](Arg2: &OracleSVI)
+	7: Pop
+	8: MoveLoc[1](Arg1: &mut PredictManager)
+	9: Pop
+	10: MoveLoc[6](Arg6: &mut TxContext)
+	11: Pop
+	12: MoveLoc[5](Arg5: &Clock)
+	13: Pop
+	14: LdConst[9](u64: 9)
+	15: Abort
+B3:
+	16: MoveLoc[0](Arg0: &mut Predict)
+	17: CopyLoc[1](Arg1: &mut PredictManager)
+	18: MoveLoc[2](Arg2: &OracleSVI)
+	19: MoveLoc[3](Arg3: MarketKey)
+	20: MoveLoc[4](Arg4: u64)
+	21: MoveLoc[5](Arg5: &Clock)
+	22: CopyLoc[6](Arg6: &mut TxContext)
+	23: Call redeem_internal<Ty0>(&mut Predict, &mut PredictManager, &OracleSVI, MarketKey, u64, &Clock, &mut TxContext): Coin<Ty0>
+	24: StLoc[7](loc0: Coin<Ty0>)
+	25: MoveLoc[1](Arg1: &mut PredictManager)
+	26: MoveLoc[7](loc0: Coin<Ty0>)
+	27: MoveLoc[6](Arg6: &mut TxContext)
+	28: FreezeRef
+	29: Call predict_manager::deposit_permissionless<Ty0>(&mut PredictManager, Coin<Ty0>, &TxContext)
+	30: Ret
+}
+
+public get_range_trade_amounts(Arg0: &Predict, Arg1: &OracleSVI, Arg2: RangeKey, Arg3: u64, Arg4: &Clock): u64 * u64 {
+L5:	loc0: u64
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: MoveLoc[1](Arg1: &OracleSVI)
+	2: MoveLoc[2](Arg2: RangeKey)
+	3: MoveLoc[4](Arg4: &Clock)
+	4: Call range_trade_prices(&Predict, &OracleSVI, RangeKey, &Clock): u64 * u64
+	5: StLoc[5](loc0: u64)
+	6: CopyLoc[3](Arg3: u64)
+	7: Call math::mul(u64, u64): u64
+	8: MoveLoc[5](loc0: u64)
+	9: MoveLoc[3](Arg3: u64)
+	10: Call math::mul(u64, u64): u64
+	11: Ret
+}
+
+public mint_range<Ty0>(Arg0: &mut Predict, Arg1: &mut PredictManager, Arg2: &OracleSVI, Arg3: RangeKey, Arg4: u64, Arg5: &Clock, Arg6: &mut TxContext) {
+L7:	loc0: u64
+L8:	loc1: u64
+L9:	loc2: u64
+L10:	loc3: u64
+L11:	loc4: Balance<Ty0>
+B0:
+	0: CopyLoc[6](Arg6: &mut TxContext)
+	1: FreezeRef
+	2: Call tx_context::sender(&TxContext): address
+	3: CopyLoc[1](Arg1: &mut PredictManager)
+	4: FreezeRef
+	5: Call predict_manager::owner(&PredictManager): address
+	6: Eq
+	7: BrFalse(9)
+B1:
+	8: Branch(21)
+B2:
+	9: MoveLoc[0](Arg0: &mut Predict)
+	10: Pop
+	11: MoveLoc[2](Arg2: &OracleSVI)
+	12: Pop
+	13: MoveLoc[1](Arg1: &mut PredictManager)
+	14: Pop
+	15: MoveLoc[6](Arg6: &mut TxContext)
+	16: Pop
+	17: MoveLoc[5](Arg5: &Clock)
+	18: Pop
+	19: LdConst[1](u64: 1)
+	20: Abort
+B3:
+	21: CopyLoc[0](Arg0: &mut Predict)
+	22: ImmBorrowField[0](Predict.trading_paused: bool)
+	23: ReadRef
+	24: Not
+	25: BrFalse(27)
+B4:
+	26: Branch(39)
+B5:
+	27: MoveLoc[0](Arg0: &mut Predict)
+	28: Pop
+	29: MoveLoc[2](Arg2: &OracleSVI)
+	30: Pop
+	31: MoveLoc[1](Arg1: &mut PredictManager)
+	32: Pop
+	33: MoveLoc[6](Arg6: &mut TxContext)
+	34: Pop
+	35: MoveLoc[5](Arg5: &Clock)
+	36: Pop
+	37: LdConst[0](u64: 0)
+	38: Abort
+B6:
+	39: CopyLoc[4](Arg4: u64)
+	40: LdU64(0)
+	41: Gt
+	42: BrFalse(44)
+B7:
+	43: Branch(56)
+B8:
+	44: MoveLoc[0](Arg0: &mut Predict)
+	45: Pop
+	46: MoveLoc[2](Arg2: &OracleSVI)
+	47: Pop
+	48: MoveLoc[1](Arg1: &mut PredictManager)
+	49: Pop
+	50: MoveLoc[6](Arg6: &mut TxContext)
+	51: Pop
+	52: MoveLoc[5](Arg5: &Clock)
+	53: Pop
+	54: LdConst[3](u64: 3)
+	55: Abort
+B9:
+	56: CopyLoc[0](Arg0: &mut Predict)
+	57: ImmBorrowField[1](Predict.treasury_config: TreasuryConfig)
+	58: Call treasury_config::assert_quote_asset<Ty0>(&TreasuryConfig)
+	59: CopyLoc[0](Arg0: &mut Predict)
+	60: ImmBorrowField[2](Predict.oracle_config: OracleConfig)
+	61: CopyLoc[2](Arg2: &OracleSVI)
+	62: ImmBorrowLoc[3](Arg3: RangeKey)
+	63: Call oracle_config::assert_range_key_matches(&OracleConfig, &OracleSVI, &RangeKey)
+	64: CopyLoc[2](Arg2: &OracleSVI)
+	65: CopyLoc[5](Arg5: &Clock)
+	66: Call oracle_config::assert_live_oracle(&OracleSVI, &Clock)
+	67: ImmBorrowLoc[3](Arg3: RangeKey)
+	68: Call range_key::lower_strike(&RangeKey): u64
+	69: StLoc[10](loc3: u64)
+	70: ImmBorrowLoc[3](Arg3: RangeKey)
+	71: Call range_key::higher_strike(&RangeKey): u64
+	72: StLoc[9](loc2: u64)
+	73: CopyLoc[0](Arg0: &mut Predict)
+	74: MutBorrowField[3](Predict.vault: Vault)
+	75: CopyLoc[2](Arg2: &OracleSVI)
+	76: Call oracle::id(&OracleSVI): ID
+	77: CopyLoc[10](loc3: u64)
+	78: CopyLoc[9](loc2: u64)
+	79: CopyLoc[4](Arg4: u64)
+	80: Call vault::insert_range(&mut Vault, ID, u64, u64, u64)
+	81: CopyLoc[0](Arg0: &mut Predict)
+	82: CopyLoc[2](Arg2: &OracleSVI)
+	83: Call refresh_oracle_risk(&mut Predict, &OracleSVI)
+	84: CopyLoc[0](Arg0: &mut Predict)
+	85: FreezeRef
+	86: CopyLoc[2](Arg2: &OracleSVI)
+	87: CopyLoc[3](Arg3: RangeKey)
+	88: MoveLoc[5](Arg5: &Clock)
+	89: Call range_trade_prices(&Predict, &OracleSVI, RangeKey, &Clock): u64 * u64
+	90: Pop
+	91: StLoc[7](loc0: u64)
+	92: CopyLoc[0](Arg0: &mut Predict)
+	93: FreezeRef
+	94: MoveLoc[2](Arg2: &OracleSVI)
+	95: Call oracle::id(&OracleSVI): ID
+	96: CopyLoc[7](loc0: u64)
+	97: Call assert_mintable_ask(&Predict, ID, u64)
+	98: CopyLoc[7](loc0: u64)
+	99: CopyLoc[4](Arg4: u64)
+	100: Call math::mul(u64, u64): u64
+	101: StLoc[8](loc1: u64)
+	102: CopyLoc[1](Arg1: &mut PredictManager)
+	103: CopyLoc[8](loc1: u64)
+	104: MoveLoc[6](Arg6: &mut TxContext)
+	105: Call predict_manager::withdraw<Ty0>(&mut PredictManager, u64, &mut TxContext): Coin<Ty0>
+	106: Call coin::into_balance<Ty0>(Coin<Ty0>): Balance<Ty0>
+	107: StLoc[11](loc4: Balance<Ty0>)
+	108: CopyLoc[0](Arg0: &mut Predict)
+	109: MutBorrowField[3](Predict.vault: Vault)
+	110: MoveLoc[11](loc4: Balance<Ty0>)
+	111: Call vault::accept_payment<Ty0>(&mut Vault, Balance<Ty0>)
+	112: CopyLoc[0](Arg0: &mut Predict)
+	113: ImmBorrowField[3](Predict.vault: Vault)
+	114: CopyLoc[0](Arg0: &mut Predict)
+	115: ImmBorrowField[4](Predict.risk_config: RiskConfig)
+	116: Call risk_config::max_total_exposure_pct(&RiskConfig): u64
+	117: Call vault::assert_total_exposure(&Vault, u64)
+	118: CopyLoc[1](Arg1: &mut PredictManager)
+	119: CopyLoc[3](Arg3: RangeKey)
+	120: CopyLoc[4](Arg4: u64)
+	121: Call predict_manager::increase_range(&mut PredictManager, RangeKey, u64)
+	122: MoveLoc[0](Arg0: &mut Predict)
+	123: FreezeRef
+	124: Call object::id<Predict>(&Predict): ID
+	125: CopyLoc[1](Arg1: &mut PredictManager)
+	126: FreezeRef
+	127: Call object::id<PredictManager>(&PredictManager): ID
+	128: MoveLoc[1](Arg1: &mut PredictManager)
+	129: FreezeRef
+	130: Call predict_manager::owner(&PredictManager): address
+	131: Call type_name::with_defining_ids<Ty0>(): TypeName
+	132: ImmBorrowLoc[3](Arg3: RangeKey)
+	133: Call range_key::oracle_id(&RangeKey): ID
+	134: ImmBorrowLoc[3](Arg3: RangeKey)
+	135: Call range_key::expiry(&RangeKey): u64
+	136: MoveLoc[10](loc3: u64)
+	137: MoveLoc[9](loc2: u64)
+	138: MoveLoc[4](Arg4: u64)
+	139: MoveLoc[8](loc1: u64)
+	140: MoveLoc[7](loc0: u64)
+	141: Pack[2](RangeMinted)
+	142: Call event::emit<RangeMinted>(RangeMinted)
+	143: Ret
+}
+
+public redeem_range<Ty0>(Arg0: &mut Predict, Arg1: &mut PredictManager, Arg2: &OracleSVI, Arg3: RangeKey, Arg4: u64, Arg5: &Clock, Arg6: &mut TxContext) {
+L7:	loc0: bool
+L8:	loc1: u64
+L9:	loc2: u64
+L10:	loc3: u64
+L11:	loc4: u64
+L12:	loc5: Coin<Ty0>
+L13:	loc6: u64
+B0:
+	0: CopyLoc[6](Arg6: &mut TxContext)
+	1: FreezeRef
+	2: Call tx_context::sender(&TxContext): address
+	3: CopyLoc[1](Arg1: &mut PredictManager)
+	4: FreezeRef
+	5: Call predict_manager::owner(&PredictManager): address
+	6: Eq
+	7: BrFalse(9)
+B1:
+	8: Branch(21)
+B2:
+	9: MoveLoc[0](Arg0: &mut Predict)
+	10: Pop
+	11: MoveLoc[2](Arg2: &OracleSVI)
+	12: Pop
+	13: MoveLoc[1](Arg1: &mut PredictManager)
+	14: Pop
+	15: MoveLoc[6](Arg6: &mut TxContext)
+	16: Pop
+	17: MoveLoc[5](Arg5: &Clock)
+	18: Pop
+	19: LdConst[1](u64: 1)
+	20: Abort
+B3:
+	21: CopyLoc[4](Arg4: u64)
+	22: LdU64(0)
+	23: Gt
+	24: BrFalse(26)
+B4:
+	25: Branch(38)
+B5:
+	26: MoveLoc[0](Arg0: &mut Predict)
+	27: Pop
+	28: MoveLoc[2](Arg2: &OracleSVI)
+	29: Pop
+	30: MoveLoc[1](Arg1: &mut PredictManager)
+	31: Pop
+	32: MoveLoc[6](Arg6: &mut TxContext)
+	33: Pop
+	34: MoveLoc[5](Arg5: &Clock)
+	35: Pop
+	36: LdConst[3](u64: 3)
+	37: Abort
+B6:
+	38: CopyLoc[0](Arg0: &mut Predict)
+	39: ImmBorrowField[2](Predict.oracle_config: OracleConfig)
+	40: CopyLoc[2](Arg2: &OracleSVI)
+	41: ImmBorrowLoc[3](Arg3: RangeKey)
+	42: Call oracle_config::assert_range_key_matches(&OracleConfig, &OracleSVI, &RangeKey)
+	43: CopyLoc[2](Arg2: &OracleSVI)
+	44: CopyLoc[5](Arg5: &Clock)
+	45: Call oracle_config::assert_quoteable_oracle(&OracleSVI, &Clock)
+	46: CopyLoc[1](Arg1: &mut PredictManager)
+	47: CopyLoc[3](Arg3: RangeKey)
+	48: CopyLoc[4](Arg4: u64)
+	49: Call predict_manager::decrease_range(&mut PredictManager, RangeKey, u64)
+	50: ImmBorrowLoc[3](Arg3: RangeKey)
+	51: Call range_key::lower_strike(&RangeKey): u64
+	52: StLoc[10](loc3: u64)
+	53: ImmBorrowLoc[3](Arg3: RangeKey)
+	54: Call range_key::higher_strike(&RangeKey): u64
+	55: StLoc[8](loc1: u64)
+	56: CopyLoc[2](Arg2: &OracleSVI)
+	57: Call oracle::is_settled(&OracleSVI): bool
+	58: BrFalse(66)
+B7:
+	59: CopyLoc[0](Arg0: &mut Predict)
+	60: ImmBorrowField[3](Predict.vault: Vault)
+	61: CopyLoc[2](Arg2: &OracleSVI)
+	62: Call oracle::id(&OracleSVI): ID
+	63: Call vault::has_settled_oracle(&Vault, ID): bool
+	64: StLoc[7](loc0: bool)
+	65: Branch(68)
+B8:
+	66: LdFalse
+	67: StLoc[7](loc0: bool)
+B9:
+	68: MoveLoc[7](loc0: bool)
+	69: BrFalse(89)
+B10:
+	70: CopyLoc[0](Arg0: &mut Predict)
+	71: FreezeRef
+	72: CopyLoc[2](Arg2: &OracleSVI)
+	73: CopyLoc[3](Arg3: RangeKey)
+	74: CopyLoc[4](Arg4: u64)
+	75: MoveLoc[5](Arg5: &Clock)
+	76: Call get_range_trade_amounts(&Predict, &OracleSVI, RangeKey, u64, &Clock): u64 * u64
+	77: StLoc[13](loc6: u64)
+	78: Pop
+	79: CopyLoc[0](Arg0: &mut Predict)
+	80: MutBorrowField[3](Predict.vault: Vault)
+	81: CopyLoc[2](Arg2: &OracleSVI)
+	82: Call oracle::id(&OracleSVI): ID
+	83: CopyLoc[4](Arg4: u64)
+	84: CopyLoc[13](loc6: u64)
+	85: Call vault::redeem_settled_position(&mut Vault, ID, u64, u64)
+	86: MoveLoc[13](loc6: u64)
+	87: StLoc[11](loc4: u64)
+	88: Branch(111)
+B11:
+	89: CopyLoc[0](Arg0: &mut Predict)
+	90: MutBorrowField[3](Predict.vault: Vault)
+	91: CopyLoc[2](Arg2: &OracleSVI)
+	92: Call oracle::id(&OracleSVI): ID
+	93: CopyLoc[10](loc3: u64)
+	94: CopyLoc[8](loc1: u64)
+	95: CopyLoc[4](Arg4: u64)
+	96: Call vault::remove_range(&mut Vault, ID, u64, u64, u64)
+	97: CopyLoc[0](Arg0: &mut Predict)
+	98: CopyLoc[2](Arg2: &OracleSVI)
+	99: Call refresh_oracle_risk(&mut Predict, &OracleSVI)
+	100: CopyLoc[0](Arg0: &mut Predict)
+	101: FreezeRef
+	102: CopyLoc[2](Arg2: &OracleSVI)
+	103: CopyLoc[3](Arg3: RangeKey)
+	104: CopyLoc[4](Arg4: u64)
+	105: MoveLoc[5](Arg5: &Clock)
+	106: Call get_range_trade_amounts(&Predict, &OracleSVI, RangeKey, u64, &Clock): u64 * u64
+	107: StLoc[9](loc2: u64)
+	108: Pop
+	109: MoveLoc[9](loc2: u64)
+	110: StLoc[11](loc4: u64)
+B12:
+	111: CopyLoc[0](Arg0: &mut Predict)
+	112: MutBorrowField[3](Predict.vault: Vault)
+	113: CopyLoc[11](loc4: u64)
+	114: Call vault::dispense_payout<Ty0>(&mut Vault, u64): Balance<Ty0>
+	115: CopyLoc[6](Arg6: &mut TxContext)
+	116: Call coin::from_balance<Ty0>(Balance<Ty0>, &mut TxContext): Coin<Ty0>
+	117: StLoc[12](loc5: Coin<Ty0>)
+	118: CopyLoc[1](Arg1: &mut PredictManager)
+	119: MoveLoc[12](loc5: Coin<Ty0>)
+	120: MoveLoc[6](Arg6: &mut TxContext)
+	121: FreezeRef
+	122: Call predict_manager::deposit<Ty0>(&mut PredictManager, Coin<Ty0>, &TxContext)
+	123: MoveLoc[0](Arg0: &mut Predict)
+	124: FreezeRef
+	125: Call object::id<Predict>(&Predict): ID
+	126: CopyLoc[1](Arg1: &mut PredictManager)
+	127: FreezeRef
+	128: Call object::id<PredictManager>(&PredictManager): ID
+	129: MoveLoc[1](Arg1: &mut PredictManager)
+	130: FreezeRef
+	131: Call predict_manager::owner(&PredictManager): address
+	132: Call type_name::with_defining_ids<Ty0>(): TypeName
+	133: ImmBorrowLoc[3](Arg3: RangeKey)
+	134: Call range_key::oracle_id(&RangeKey): ID
+	135: ImmBorrowLoc[3](Arg3: RangeKey)
+	136: Call range_key::expiry(&RangeKey): u64
+	137: MoveLoc[10](loc3: u64)
+	138: MoveLoc[8](loc1: u64)
+	139: CopyLoc[4](Arg4: u64)
+	140: CopyLoc[11](loc4: u64)
+	141: MoveLoc[11](loc4: u64)
+	142: MoveLoc[4](Arg4: u64)
+	143: Call math::div(u64, u64): u64
+	144: MoveLoc[2](Arg2: &OracleSVI)
+	145: Call oracle::is_settled(&OracleSVI): bool
+	146: Pack[3](RangeRedeemed)
+	147: Call event::emit<RangeRedeemed>(RangeRedeemed)
+	148: Ret
+}
+
+public supply<Ty0>(Arg0: &mut Predict, Arg1: Coin<Ty0>, Arg2: &Clock, Arg3: &mut TxContext): Coin<PLP> {
+L4:	loc0: u64
+L5:	loc1: u64
+L6:	loc2: u64
+L7:	loc3: u64
+L8:	loc4: u64
+B0:
+	0: ImmBorrowLoc[1](Arg1: Coin<Ty0>)
+	1: Call coin::value<Ty0>(&Coin<Ty0>): u64
+	2: StLoc[5](loc1: u64)
+	3: CopyLoc[5](loc1: u64)
+	4: LdU64(0)
+	5: Gt
+	6: BrFalse(8)
+B1:
+	7: Branch(16)
+B2:
+	8: MoveLoc[0](Arg0: &mut Predict)
+	9: Pop
+	10: MoveLoc[3](Arg3: &mut TxContext)
+	11: Pop
+	12: MoveLoc[2](Arg2: &Clock)
+	13: Pop
+	14: LdConst[4](u64: 4)
+	15: Abort
+B3:
+	16: CopyLoc[0](Arg0: &mut Predict)
+	17: ImmBorrowField[1](Predict.treasury_config: TreasuryConfig)
+	18: Call treasury_config::assert_quote_asset<Ty0>(&TreasuryConfig)
+	19: CopyLoc[0](Arg0: &mut Predict)
+	20: ImmBorrowField[3](Predict.vault: Vault)
+	21: Call vault::vault_value(&Vault): u64
+	22: StLoc[8](loc4: u64)
+	23: CopyLoc[0](Arg0: &mut Predict)
+	24: MutBorrowField[3](Predict.vault: Vault)
+	25: MoveLoc[1](Arg1: Coin<Ty0>)
+	26: Call coin::into_balance<Ty0>(Coin<Ty0>): Balance<Ty0>
+	27: Call vault::accept_payment<Ty0>(&mut Vault, Balance<Ty0>)
+	28: CopyLoc[0](Arg0: &mut Predict)
+	29: MutBorrowField[5](Predict.withdrawal_limiter: RateLimiter)
+	30: CopyLoc[5](loc1: u64)
+	31: MoveLoc[2](Arg2: &Clock)
+	32: Call rate_limiter::record_deposit(&mut RateLimiter, u64, &Clock)
+	33: CopyLoc[0](Arg0: &mut Predict)
+	34: ImmBorrowField[6](Predict.treasury_cap: TreasuryCap<PLP>)
+	35: Call coin::total_supply<PLP>(&TreasuryCap<PLP>): u64
+	36: StLoc[7](loc3: u64)
+	37: CopyLoc[7](loc3: u64)
+	38: LdU64(0)
+	39: Eq
+	40: BrFalse(44)
+B4:
+	41: CopyLoc[5](loc1: u64)
+	42: StLoc[4](loc0: u64)
+	43: Branch(60)
+B5:
+	44: CopyLoc[8](loc4: u64)
+	45: LdU64(0)
+	46: Gt
+	47: BrFalse(49)
+B6:
+	48: Branch(55)
+B7:
+	49: MoveLoc[0](Arg0: &mut Predict)
+	50: Pop
+	51: MoveLoc[3](Arg3: &mut TxContext)
+	52: Pop
+	53: LdConst[5](u64: 5)
+	54: Abort
+B8:
+	55: CopyLoc[5](loc1: u64)
+	56: MoveLoc[7](loc3: u64)
+	57: MoveLoc[8](loc4: u64)
+	58: Call 0math::mul_div_round_down(u64, u64, u64): u64
+	59: StLoc[4](loc0: u64)
+B9:
+	60: MoveLoc[4](loc0: u64)
+	61: StLoc[6](loc2: u64)
+	62: CopyLoc[6](loc2: u64)
+	63: LdU64(0)
+	64: Gt
+	65: BrFalse(67)
+B10:
+	66: Branch(73)
+B11:
+	67: MoveLoc[0](Arg0: &mut Predict)
+	68: Pop
+	69: MoveLoc[3](Arg3: &mut TxContext)
+	70: Pop
+	71: LdConst[6](u64: 6)
+	72: Abort
+B12:
+	73: CopyLoc[0](Arg0: &mut Predict)
+	74: FreezeRef
+	75: Call object::id<Predict>(&Predict): ID
+	76: CopyLoc[3](Arg3: &mut TxContext)
+	77: FreezeRef
+	78: Call tx_context::sender(&TxContext): address
+	79: Call type_name::with_defining_ids<Ty0>(): TypeName
+	80: MoveLoc[5](loc1: u64)
+	81: CopyLoc[6](loc2: u64)
+	82: Pack[11](Supplied)
+	83: Call event::emit<Supplied>(Supplied)
+	84: MoveLoc[0](Arg0: &mut Predict)
+	85: MutBorrowField[6](Predict.treasury_cap: TreasuryCap<PLP>)
+	86: MoveLoc[6](loc2: u64)
+	87: MoveLoc[3](Arg3: &mut TxContext)
+	88: Call coin::mint<PLP>(&mut TreasuryCap<PLP>, u64, &mut TxContext): Coin<PLP>
+	89: Ret
+}
+
+public withdraw<Ty0>(Arg0: &mut Predict, Arg1: Coin<PLP>, Arg2: &Clock, Arg3: &mut TxContext): Coin<Ty0> {
+L4:	loc0: u64
+L5:	loc1: u64
+L6:	loc2: u64
+L7:	loc3: u64
+L8:	loc4: u64
+L9:	loc5: u64
+L10:	loc6: u64
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: ImmBorrowField[3](Predict.vault: Vault)
+	2: Call vault::vault_value(&Vault): u64
+	3: StLoc[10](loc6: u64)
+	4: ImmBorrowLoc[1](Arg1: Coin<PLP>)
+	5: Call coin::value<PLP>(&Coin<PLP>): u64
+	6: StLoc[9](loc5: u64)
+	7: CopyLoc[9](loc5: u64)
+	8: LdU64(0)
+	9: Gt
+	10: BrFalse(12)
+B1:
+	11: Branch(20)
+B2:
+	12: MoveLoc[0](Arg0: &mut Predict)
+	13: Pop
+	14: MoveLoc[3](Arg3: &mut TxContext)
+	15: Pop
+	16: MoveLoc[2](Arg2: &Clock)
+	17: Pop
+	18: LdConst[4](u64: 4)
+	19: Abort
+B3:
+	20: CopyLoc[0](Arg0: &mut Predict)
+	21: FreezeRef
+	22: CopyLoc[9](loc5: u64)
+	23: MoveLoc[10](loc6: u64)
+	24: Call shares_to_amount(&Predict, u64, u64): u64
+	25: StLoc[5](loc1: u64)
+	26: CopyLoc[0](Arg0: &mut Predict)
+	27: ImmBorrowField[3](Predict.vault: Vault)
+	28: Call vault::balance(&Vault): u64
+	29: StLoc[7](loc3: u64)
+	30: CopyLoc[0](Arg0: &mut Predict)
+	31: ImmBorrowField[3](Predict.vault: Vault)
+	32: Call vault::total_max_payout(&Vault): u64
+	33: StLoc[8](loc4: u64)
+	34: CopyLoc[7](loc3: u64)
+	35: CopyLoc[8](loc4: u64)
+	36: Gt
+	37: BrFalse(43)
+B4:
+	38: MoveLoc[7](loc3: u64)
+	39: MoveLoc[8](loc4: u64)
+	40: Sub
+	41: StLoc[4](loc0: u64)
+	42: Branch(45)
+B5:
+	43: LdU64(0)
+	44: StLoc[4](loc0: u64)
+B6:
+	45: MoveLoc[4](loc0: u64)
+	46: StLoc[6](loc2: u64)
+	47: CopyLoc[5](loc1: u64)
+	48: MoveLoc[6](loc2: u64)
+	49: Le
+	50: BrFalse(52)
+B7:
+	51: Branch(60)
+B8:
+	52: MoveLoc[0](Arg0: &mut Predict)
+	53: Pop
+	54: MoveLoc[3](Arg3: &mut TxContext)
+	55: Pop
+	56: MoveLoc[2](Arg2: &Clock)
+	57: Pop
+	58: LdConst[2](u64: 2)
+	59: Abort
+B9:
+	60: CopyLoc[0](Arg0: &mut Predict)
+	61: MutBorrowField[5](Predict.withdrawal_limiter: RateLimiter)
+	62: CopyLoc[5](loc1: u64)
+	63: MoveLoc[2](Arg2: &Clock)
+	64: Call rate_limiter::consume(&mut RateLimiter, u64, &Clock)
+	65: CopyLoc[0](Arg0: &mut Predict)
+	66: MutBorrowField[6](Predict.treasury_cap: TreasuryCap<PLP>)
+	67: MoveLoc[1](Arg1: Coin<PLP>)
+	68: Call coin::burn<PLP>(&mut TreasuryCap<PLP>, Coin<PLP>): u64
+	69: Pop
+	70: CopyLoc[0](Arg0: &mut Predict)
+	71: FreezeRef
+	72: Call object::id<Predict>(&Predict): ID
+	73: CopyLoc[3](Arg3: &mut TxContext)
+	74: FreezeRef
+	75: Call tx_context::sender(&TxContext): address
+	76: Call type_name::with_defining_ids<Ty0>(): TypeName
+	77: CopyLoc[5](loc1: u64)
+	78: MoveLoc[9](loc5: u64)
+	79: Pack[12](Withdrawn)
+	80: Call event::emit<Withdrawn>(Withdrawn)
+	81: MoveLoc[0](Arg0: &mut Predict)
+	82: MutBorrowField[3](Predict.vault: Vault)
+	83: MoveLoc[5](loc1: u64)
+	84: Call vault::dispense_payout<Ty0>(&mut Vault, u64): Balance<Ty0>
+	85: MoveLoc[3](Arg3: &mut TxContext)
+	86: Call coin::from_balance<Ty0>(Balance<Ty0>, &mut TxContext): Coin<Ty0>
+	87: Ret
+}
+
+public(friend) create<Ty0>(Arg0: &Currency<Ty0>, Arg1: TreasuryCap<PLP>, Arg2: &Clock, Arg3: &mut TxContext): ID {
+L4:	loc0: Predict
+L5:	loc1: ID
+B0:
+	0: CopyLoc[3](Arg3: &mut TxContext)
+	1: Call object::new(&mut TxContext): UID
+	2: CopyLoc[3](Arg3: &mut TxContext)
+	3: Call vault::new(&mut TxContext): Vault
+	4: MoveLoc[1](Arg1: TreasuryCap<PLP>)
+	5: Call pricing_config::new(): PricingConfig
+	6: Call risk_config::new(): RiskConfig
+	7: Call treasury_config::new(): TreasuryConfig
+	8: MoveLoc[3](Arg3: &mut TxContext)
+	9: Call oracle_config::new(&mut TxContext): OracleConfig
+	10: MoveLoc[2](Arg2: &Clock)
+	11: Call rate_limiter::new(&Clock): RateLimiter
+	12: LdFalse
+	13: Pack[13](Predict)
+	14: StLoc[4](loc0: Predict)
+	15: MutBorrowLoc[4](loc0: Predict)
+	16: MoveLoc[0](Arg0: &Currency<Ty0>)
+	17: Call enable_quote_asset<Ty0>(&mut Predict, &Currency<Ty0>)
+	18: ImmBorrowLoc[4](loc0: Predict)
+	19: Call object::id<Predict>(&Predict): ID
+	20: StLoc[5](loc1: ID)
+	21: MoveLoc[4](loc0: Predict)
+	22: Call transfer::share_object<Predict>(Predict)
+	23: MoveLoc[5](loc1: ID)
+	24: Ret
+}
+
+public(friend) enable_quote_asset<Ty0>(Arg0: &mut Predict, Arg1: &Currency<Ty0>) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[1](Predict.treasury_config: TreasuryConfig)
+	2: MoveLoc[1](Arg1: &Currency<Ty0>)
+	3: Call treasury_config::add_quote_asset<Ty0>(&mut TreasuryConfig, &Currency<Ty0>)
+	4: MoveLoc[0](Arg0: &mut Predict)
+	5: FreezeRef
+	6: Call object::id<Predict>(&Predict): ID
+	7: Call type_name::with_defining_ids<Ty0>(): TypeName
+	8: Pack[9](QuoteAssetEnabled)
+	9: Call event::emit<QuoteAssetEnabled>(QuoteAssetEnabled)
+	10: Ret
+}
+
+public(friend) disable_quote_asset<Ty0>(Arg0: &mut Predict) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[1](Predict.treasury_config: TreasuryConfig)
+	2: Call treasury_config::remove_quote_asset<Ty0>(&mut TreasuryConfig)
+	3: MoveLoc[0](Arg0: &mut Predict)
+	4: FreezeRef
+	5: Call object::id<Predict>(&Predict): ID
+	6: Call type_name::with_defining_ids<Ty0>(): TypeName
+	7: Pack[10](QuoteAssetDisabled)
+	8: Call event::emit<QuoteAssetDisabled>(QuoteAssetDisabled)
+	9: Ret
+}
+
+public(friend) add_oracle_grid(Arg0: &mut Predict, Arg1: ID, Arg2: u64, Arg3: u64, Arg4: &mut TxContext) {
+L5:	loc0: u64
+L6:	loc1: u64
+L7:	loc2: u64
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[2](Predict.oracle_config: OracleConfig)
+	2: CopyLoc[1](Arg1: ID)
+	3: CopyLoc[2](Arg2: u64)
+	4: CopyLoc[3](Arg3: u64)
+	5: Call oracle_config::add_oracle_grid(&mut OracleConfig, ID, u64, u64)
+	6: CopyLoc[2](Arg2: u64)
+	7: StLoc[6](loc1: u64)
+	8: CopyLoc[3](Arg3: u64)
+	9: StLoc[5](loc0: u64)
+	10: MoveLoc[6](loc1: u64)
+	11: MoveLoc[5](loc0: u64)
+	12: LdU64(100000)
+	13: Mul
+	14: Add
+	15: StLoc[7](loc2: u64)
+	16: MoveLoc[0](Arg0: &mut Predict)
+	17: MutBorrowField[3](Predict.vault: Vault)
+	18: MoveLoc[1](Arg1: ID)
+	19: MoveLoc[2](Arg2: u64)
+	20: MoveLoc[7](loc2: u64)
+	21: MoveLoc[3](Arg3: u64)
+	22: MoveLoc[4](Arg4: &mut TxContext)
+	23: Call vault::init_oracle_matrix(&mut Vault, ID, u64, u64, u64, &mut TxContext)
+	24: Ret
+}
+
+public trading_paused(Arg0: &Predict): bool {
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[0](Predict.trading_paused: bool)
+	2: ReadRef
+	3: Ret
+}
+
+public base_spread(Arg0: &Predict): u64 {
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: Call pricing_config::base_spread(&PricingConfig): u64
+	3: Ret
+}
+
+public accepted_quotes(Arg0: &Predict): &VecSet<TypeName> {
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[1](Predict.treasury_config: TreasuryConfig)
+	2: Call treasury_config::accepted_quotes(&TreasuryConfig): &VecSet<TypeName>
+	3: Ret
+}
+
+public min_spread(Arg0: &Predict): u64 {
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: Call pricing_config::min_spread(&PricingConfig): u64
+	3: Ret
+}
+
+public utilization_multiplier(Arg0: &Predict): u64 {
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: Call pricing_config::utilization_multiplier(&PricingConfig): u64
+	3: Ret
+}
+
+public max_total_exposure_pct(Arg0: &Predict): u64 {
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[4](Predict.risk_config: RiskConfig)
+	2: Call risk_config::max_total_exposure_pct(&RiskConfig): u64
+	3: Ret
+}
+
+public(friend) set_trading_paused(Arg0: &mut Predict, Arg1: bool) {
+B0:
+	0: CopyLoc[1](Arg1: bool)
+	1: CopyLoc[0](Arg0: &mut Predict)
+	2: MutBorrowField[0](Predict.trading_paused: bool)
+	3: WriteRef
+	4: MoveLoc[0](Arg0: &mut Predict)
+	5: FreezeRef
+	6: Call object::id<Predict>(&Predict): ID
+	7: MoveLoc[1](Arg1: bool)
+	8: Pack[4](TradingPauseUpdated)
+	9: Call event::emit<TradingPauseUpdated>(TradingPauseUpdated)
+	10: Ret
+}
+
+public(friend) set_base_spread(Arg0: &mut Predict, Arg1: u64) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: MoveLoc[1](Arg1: u64)
+	3: Call pricing_config::set_base_spread(&mut PricingConfig, u64)
+	4: MoveLoc[0](Arg0: &mut Predict)
+	5: FreezeRef
+	6: Call emit_pricing_config_updated(&Predict)
+	7: Ret
+}
+
+public(friend) set_min_spread(Arg0: &mut Predict, Arg1: u64) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: MoveLoc[1](Arg1: u64)
+	3: Call pricing_config::set_min_spread(&mut PricingConfig, u64)
+	4: MoveLoc[0](Arg0: &mut Predict)
+	5: FreezeRef
+	6: Call emit_pricing_config_updated(&Predict)
+	7: Ret
+}
+
+public(friend) set_utilization_multiplier(Arg0: &mut Predict, Arg1: u64) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: MoveLoc[1](Arg1: u64)
+	3: Call pricing_config::set_utilization_multiplier(&mut PricingConfig, u64)
+	4: MoveLoc[0](Arg0: &mut Predict)
+	5: FreezeRef
+	6: Call emit_pricing_config_updated(&Predict)
+	7: Ret
+}
+
+public(friend) set_min_ask_price(Arg0: &mut Predict, Arg1: u64) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: MoveLoc[1](Arg1: u64)
+	3: Call pricing_config::set_min_ask_price(&mut PricingConfig, u64)
+	4: MoveLoc[0](Arg0: &mut Predict)
+	5: FreezeRef
+	6: Call emit_pricing_config_updated(&Predict)
+	7: Ret
+}
+
+public(friend) set_max_ask_price(Arg0: &mut Predict, Arg1: u64) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: MoveLoc[1](Arg1: u64)
+	3: Call pricing_config::set_max_ask_price(&mut PricingConfig, u64)
+	4: MoveLoc[0](Arg0: &mut Predict)
+	5: FreezeRef
+	6: Call emit_pricing_config_updated(&Predict)
+	7: Ret
+}
+
+public(friend) set_oracle_ask_bounds(Arg0: &mut Predict, Arg1: &OracleSVI, Arg2: &OracleSVICap, Arg3: u64, Arg4: u64) {
+B0:
+	0: CopyLoc[3](Arg3: u64)
+	1: CopyLoc[0](Arg0: &mut Predict)
+	2: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	3: Call pricing_config::min_ask_price(&PricingConfig): u64
+	4: Ge
+	5: BrFalse(7)
+B1:
+	6: Branch(15)
+B2:
+	7: MoveLoc[0](Arg0: &mut Predict)
+	8: Pop
+	9: MoveLoc[1](Arg1: &OracleSVI)
+	10: Pop
+	11: MoveLoc[2](Arg2: &OracleSVICap)
+	12: Pop
+	13: LdConst[8](u64: 8)
+	14: Abort
+B3:
+	15: CopyLoc[4](Arg4: u64)
+	16: CopyLoc[0](Arg0: &mut Predict)
+	17: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	18: Call pricing_config::max_ask_price(&PricingConfig): u64
+	19: Le
+	20: BrFalse(22)
+B4:
+	21: Branch(30)
+B5:
+	22: MoveLoc[0](Arg0: &mut Predict)
+	23: Pop
+	24: MoveLoc[1](Arg1: &OracleSVI)
+	25: Pop
+	26: MoveLoc[2](Arg2: &OracleSVICap)
+	27: Pop
+	28: LdConst[8](u64: 8)
+	29: Abort
+B6:
+	30: CopyLoc[0](Arg0: &mut Predict)
+	31: MutBorrowField[2](Predict.oracle_config: OracleConfig)
+	32: CopyLoc[1](Arg1: &OracleSVI)
+	33: MoveLoc[2](Arg2: &OracleSVICap)
+	34: CopyLoc[3](Arg3: u64)
+	35: CopyLoc[4](Arg4: u64)
+	36: Call oracle_config::set_oracle_ask_bounds(&mut OracleConfig, &OracleSVI, &OracleSVICap, u64, u64)
+	37: MoveLoc[0](Arg0: &mut Predict)
+	38: FreezeRef
+	39: Call object::id<Predict>(&Predict): ID
+	40: MoveLoc[1](Arg1: &OracleSVI)
+	41: Call oracle::id(&OracleSVI): ID
+	42: MoveLoc[3](Arg3: u64)
+	43: MoveLoc[4](Arg4: u64)
+	44: Pack[6](OracleAskBoundsSet)
+	45: Call event::emit<OracleAskBoundsSet>(OracleAskBoundsSet)
+	46: Ret
+}
+
+public(friend) clear_oracle_ask_bounds(Arg0: &mut Predict, Arg1: &OracleSVI, Arg2: &OracleSVICap) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[2](Predict.oracle_config: OracleConfig)
+	2: CopyLoc[1](Arg1: &OracleSVI)
+	3: MoveLoc[2](Arg2: &OracleSVICap)
+	4: Call oracle_config::clear_oracle_ask_bounds(&mut OracleConfig, &OracleSVI, &OracleSVICap)
+	5: MoveLoc[0](Arg0: &mut Predict)
+	6: FreezeRef
+	7: Call object::id<Predict>(&Predict): ID
+	8: MoveLoc[1](Arg1: &OracleSVI)
+	9: Call oracle::id(&OracleSVI): ID
+	10: Pack[7](OracleAskBoundsCleared)
+	11: Call event::emit<OracleAskBoundsCleared>(OracleAskBoundsCleared)
+	12: Ret
+}
+
+public(friend) set_max_total_exposure_pct(Arg0: &mut Predict, Arg1: u64) {
+B0:
+	0: CopyLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[4](Predict.risk_config: RiskConfig)
+	2: MoveLoc[1](Arg1: u64)
+	3: Call risk_config::set_max_total_exposure_pct(&mut RiskConfig, u64)
+	4: CopyLoc[0](Arg0: &mut Predict)
+	5: FreezeRef
+	6: Call object::id<Predict>(&Predict): ID
+	7: MoveLoc[0](Arg0: &mut Predict)
+	8: ImmBorrowField[4](Predict.risk_config: RiskConfig)
+	9: Call risk_config::max_total_exposure_pct(&RiskConfig): u64
+	10: Pack[8](RiskConfigUpdated)
+	11: Call event::emit<RiskConfigUpdated>(RiskConfigUpdated)
+	12: Ret
+}
+
+public(friend) update_withdrawal_limiter(Arg0: &mut Predict, Arg1: u64, Arg2: u64, Arg3: &Clock) {
+B0:
+	0: MoveLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[5](Predict.withdrawal_limiter: RateLimiter)
+	2: MoveLoc[1](Arg1: u64)
+	3: MoveLoc[2](Arg2: u64)
+	4: MoveLoc[3](Arg3: &Clock)
+	5: Call rate_limiter::update_config(&mut RateLimiter, u64, u64, &Clock)
+	6: Ret
+}
+
+public(friend) enable_withdrawal_limiter(Arg0: &mut Predict, Arg1: &Clock) {
+B0:
+	0: MoveLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[5](Predict.withdrawal_limiter: RateLimiter)
+	2: MoveLoc[1](Arg1: &Clock)
+	3: Call rate_limiter::enable(&mut RateLimiter, &Clock)
+	4: Ret
+}
+
+public(friend) disable_withdrawal_limiter(Arg0: &mut Predict) {
+B0:
+	0: MoveLoc[0](Arg0: &mut Predict)
+	1: MutBorrowField[5](Predict.withdrawal_limiter: RateLimiter)
+	2: Call rate_limiter::disable(&mut RateLimiter)
+	3: Ret
+}
+
+public available_withdrawal(Arg0: &Predict, Arg1: &Clock): u64 {
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[5](Predict.withdrawal_limiter: RateLimiter)
+	2: MoveLoc[1](Arg1: &Clock)
+	3: Call rate_limiter::available_withdrawal(&RateLimiter, &Clock): u64
+	4: Ret
+}
+
+redeem_internal<Ty0>(Arg0: &mut Predict, Arg1: &mut PredictManager, Arg2: &OracleSVI, Arg3: MarketKey, Arg4: u64, Arg5: &Clock, Arg6: &mut TxContext): Coin<Ty0> {
+L7:	loc0: bool
+L8:	loc1: u64
+L9:	loc2: u64
+L10:	loc3: Coin<Ty0>
+L11:	loc4: u64
+B0:
+	0: CopyLoc[4](Arg4: u64)
+	1: LdU64(0)
+	2: Gt
+	3: BrFalse(5)
+B1:
+	4: Branch(17)
+B2:
+	5: MoveLoc[0](Arg0: &mut Predict)
+	6: Pop
+	7: MoveLoc[2](Arg2: &OracleSVI)
+	8: Pop
+	9: MoveLoc[1](Arg1: &mut PredictManager)
+	10: Pop
+	11: MoveLoc[6](Arg6: &mut TxContext)
+	12: Pop
+	13: MoveLoc[5](Arg5: &Clock)
+	14: Pop
+	15: LdConst[3](u64: 3)
+	16: Abort
+B3:
+	17: CopyLoc[0](Arg0: &mut Predict)
+	18: ImmBorrowField[2](Predict.oracle_config: OracleConfig)
+	19: CopyLoc[2](Arg2: &OracleSVI)
+	20: ImmBorrowLoc[3](Arg3: MarketKey)
+	21: Call oracle_config::assert_key_matches(&OracleConfig, &OracleSVI, &MarketKey)
+	22: CopyLoc[2](Arg2: &OracleSVI)
+	23: CopyLoc[5](Arg5: &Clock)
+	24: Call oracle_config::assert_quoteable_oracle(&OracleSVI, &Clock)
+	25: CopyLoc[1](Arg1: &mut PredictManager)
+	26: CopyLoc[3](Arg3: MarketKey)
+	27: CopyLoc[4](Arg4: u64)
+	28: Call predict_manager::decrease_position(&mut PredictManager, MarketKey, u64)
+	29: CopyLoc[2](Arg2: &OracleSVI)
+	30: Call oracle::is_settled(&OracleSVI): bool
+	31: BrFalse(39)
+B4:
+	32: CopyLoc[0](Arg0: &mut Predict)
+	33: ImmBorrowField[3](Predict.vault: Vault)
+	34: CopyLoc[2](Arg2: &OracleSVI)
+	35: Call oracle::id(&OracleSVI): ID
+	36: Call vault::has_settled_oracle(&Vault, ID): bool
+	37: StLoc[7](loc0: bool)
+	38: Branch(41)
+B5:
+	39: LdFalse
+	40: StLoc[7](loc0: bool)
+B6:
+	41: MoveLoc[7](loc0: bool)
+	42: BrFalse(62)
+B7:
+	43: CopyLoc[0](Arg0: &mut Predict)
+	44: FreezeRef
+	45: CopyLoc[2](Arg2: &OracleSVI)
+	46: CopyLoc[3](Arg3: MarketKey)
+	47: CopyLoc[4](Arg4: u64)
+	48: MoveLoc[5](Arg5: &Clock)
+	49: Call get_trade_amounts(&Predict, &OracleSVI, MarketKey, u64, &Clock): u64 * u64
+	50: StLoc[11](loc4: u64)
+	51: Pop
+	52: CopyLoc[0](Arg0: &mut Predict)
+	53: MutBorrowField[3](Predict.vault: Vault)
+	54: CopyLoc[2](Arg2: &OracleSVI)
+	55: Call oracle::id(&OracleSVI): ID
+	56: CopyLoc[4](Arg4: u64)
+	57: CopyLoc[11](loc4: u64)
+	58: Call vault::redeem_settled_position(&mut Vault, ID, u64, u64)
+	59: MoveLoc[11](loc4: u64)
+	60: StLoc[9](loc2: u64)
+	61: Branch(86)
+B8:
+	62: CopyLoc[0](Arg0: &mut Predict)
+	63: MutBorrowField[3](Predict.vault: Vault)
+	64: CopyLoc[2](Arg2: &OracleSVI)
+	65: Call oracle::id(&OracleSVI): ID
+	66: ImmBorrowLoc[3](Arg3: MarketKey)
+	67: Call market_key::is_up(&MarketKey): bool
+	68: ImmBorrowLoc[3](Arg3: MarketKey)
+	69: Call market_key::strike(&MarketKey): u64
+	70: CopyLoc[4](Arg4: u64)
+	71: Call vault::remove_position(&mut Vault, ID, bool, u64, u64)
+	72: CopyLoc[0](Arg0: &mut Predict)
+	73: CopyLoc[2](Arg2: &OracleSVI)
+	74: Call refresh_oracle_risk(&mut Predict, &OracleSVI)
+	75: CopyLoc[0](Arg0: &mut Predict)
+	76: FreezeRef
+	77: CopyLoc[2](Arg2: &OracleSVI)
+	78: CopyLoc[3](Arg3: MarketKey)
+	79: CopyLoc[4](Arg4: u64)
+	80: MoveLoc[5](Arg5: &Clock)
+	81: Call get_trade_amounts(&Predict, &OracleSVI, MarketKey, u64, &Clock): u64 * u64
+	82: StLoc[8](loc1: u64)
+	83: Pop
+	84: MoveLoc[8](loc1: u64)
+	85: StLoc[9](loc2: u64)
+B9:
+	86: CopyLoc[0](Arg0: &mut Predict)
+	87: MutBorrowField[3](Predict.vault: Vault)
+	88: CopyLoc[9](loc2: u64)
+	89: Call vault::dispense_payout<Ty0>(&mut Vault, u64): Balance<Ty0>
+	90: CopyLoc[6](Arg6: &mut TxContext)
+	91: Call coin::from_balance<Ty0>(Balance<Ty0>, &mut TxContext): Coin<Ty0>
+	92: StLoc[10](loc3: Coin<Ty0>)
+	93: MoveLoc[0](Arg0: &mut Predict)
+	94: FreezeRef
+	95: Call object::id<Predict>(&Predict): ID
+	96: CopyLoc[1](Arg1: &mut PredictManager)
+	97: FreezeRef
+	98: Call object::id<PredictManager>(&PredictManager): ID
+	99: MoveLoc[1](Arg1: &mut PredictManager)
+	100: FreezeRef
+	101: Call predict_manager::owner(&PredictManager): address
+	102: MoveLoc[6](Arg6: &mut TxContext)
+	103: FreezeRef
+	104: Call tx_context::sender(&TxContext): address
+	105: Call type_name::with_defining_ids<Ty0>(): TypeName
+	106: ImmBorrowLoc[3](Arg3: MarketKey)
+	107: Call market_key::oracle_id(&MarketKey): ID
+	108: ImmBorrowLoc[3](Arg3: MarketKey)
+	109: Call market_key::expiry(&MarketKey): u64
+	110: ImmBorrowLoc[3](Arg3: MarketKey)
+	111: Call market_key::strike(&MarketKey): u64
+	112: ImmBorrowLoc[3](Arg3: MarketKey)
+	113: Call market_key::is_up(&MarketKey): bool
+	114: CopyLoc[4](Arg4: u64)
+	115: CopyLoc[9](loc2: u64)
+	116: MoveLoc[9](loc2: u64)
+	117: MoveLoc[4](Arg4: u64)
+	118: Call math::div(u64, u64): u64
+	119: MoveLoc[2](Arg2: &OracleSVI)
+	120: Call oracle::is_settled(&OracleSVI): bool
+	121: Pack[1](PositionRedeemed)
+	122: Call event::emit<PositionRedeemed>(PositionRedeemed)
+	123: MoveLoc[10](loc3: Coin<Ty0>)
+	124: Ret
+}
+
+shares_to_amount(Arg0: &Predict, Arg1: u64, Arg2: u64): u64 {
+L3:	loc0: bool
+L4:	loc1: u64
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[6](Predict.treasury_cap: TreasuryCap<PLP>)
+	2: Call coin::total_supply<PLP>(&TreasuryCap<PLP>): u64
+	3: StLoc[4](loc1: u64)
+	4: CopyLoc[1](Arg1: u64)
+	5: LdU64(0)
+	6: Eq
+	7: BrFalse(11)
+B1:
+	8: LdTrue
+	9: StLoc[3](loc0: bool)
+	10: Branch(15)
+B2:
+	11: CopyLoc[4](loc1: u64)
+	12: LdU64(0)
+	13: Eq
+	14: StLoc[3](loc0: bool)
+B3:
+	15: MoveLoc[3](loc0: bool)
+	16: BrFalse(19)
+B4:
+	17: LdU64(0)
+	18: Ret
+B5:
+	19: CopyLoc[4](loc1: u64)
+	20: CopyLoc[1](Arg1: u64)
+	21: Eq
+	22: BrFalse(25)
+B6:
+	23: MoveLoc[2](Arg2: u64)
+	24: Ret
+B7:
+	25: MoveLoc[1](Arg1: u64)
+	26: MoveLoc[2](Arg2: u64)
+	27: MoveLoc[4](loc1: u64)
+	28: Call 0math::mul_div_round_down(u64, u64, u64): u64
+	29: Ret
+}
+
+emit_pricing_config_updated(Arg0: &Predict) {
+B0:
+	0: CopyLoc[0](Arg0: &Predict)
+	1: Call object::id<Predict>(&Predict): ID
+	2: CopyLoc[0](Arg0: &Predict)
+	3: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	4: Call pricing_config::base_spread(&PricingConfig): u64
+	5: CopyLoc[0](Arg0: &Predict)
+	6: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	7: Call pricing_config::min_spread(&PricingConfig): u64
+	8: CopyLoc[0](Arg0: &Predict)
+	9: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	10: Call pricing_config::utilization_multiplier(&PricingConfig): u64
+	11: CopyLoc[0](Arg0: &Predict)
+	12: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	13: Call pricing_config::min_ask_price(&PricingConfig): u64
+	14: MoveLoc[0](Arg0: &Predict)
+	15: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	16: Call pricing_config::max_ask_price(&PricingConfig): u64
+	17: Pack[5](PricingConfigUpdated)
+	18: Call event::emit<PricingConfigUpdated>(PricingConfigUpdated)
+	19: Ret
+}
+
+trade_prices(Arg0: &Predict, Arg1: &OracleSVI, Arg2: MarketKey, Arg3: &Clock): u64 * u64 {
+L4:	loc0: u64
+L5:	loc1: u64
+L6:	loc2: u64
+L7:	loc3: u64
+L8:	loc4: u64
+L9:	loc5: u64
+L10:	loc6: u64
+L11:	loc7: u64
+L12:	loc8: u64
+L13:	loc9: u64
+L14:	loc10: u64
+B0:
+	0: CopyLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[2](Predict.oracle_config: OracleConfig)
+	2: CopyLoc[1](Arg1: &OracleSVI)
+	3: ImmBorrowLoc[2](Arg2: MarketKey)
+	4: Call oracle_config::assert_key_matches(&OracleConfig, &OracleSVI, &MarketKey)
+	5: CopyLoc[1](Arg1: &OracleSVI)
+	6: MoveLoc[3](Arg3: &Clock)
+	7: Call oracle_config::assert_quoteable_oracle(&OracleSVI, &Clock)
+	8: CopyLoc[1](Arg1: &OracleSVI)
+	9: ImmBorrowLoc[2](Arg2: MarketKey)
+	10: Call market_key::strike(&MarketKey): u64
+	11: Call oracle::compute_price(&OracleSVI, u64): u64
+	12: StLoc[14](loc10: u64)
+	13: MoveLoc[1](Arg1: &OracleSVI)
+	14: Call oracle::is_settled(&OracleSVI): bool
+	15: BrFalse(33)
+B1:
+	16: MoveLoc[0](Arg0: &Predict)
+	17: Pop
+	18: ImmBorrowLoc[2](Arg2: MarketKey)
+	19: Call market_key::is_up(&MarketKey): bool
+	20: BrFalse(24)
+B2:
+	21: MoveLoc[14](loc10: u64)
+	22: StLoc[4](loc0: u64)
+	23: Branch(28)
+B3:
+	24: LdU64(1000000000)
+	25: MoveLoc[14](loc10: u64)
+	26: Sub
+	27: StLoc[4](loc0: u64)
+B4:
+	28: MoveLoc[4](loc0: u64)
+	29: StLoc[10](loc6: u64)
+	30: CopyLoc[10](loc6: u64)
+	31: MoveLoc[10](loc6: u64)
+	32: Ret
+B5:
+	33: CopyLoc[0](Arg0: &Predict)
+	34: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	35: CopyLoc[14](loc10: u64)
+	36: CopyLoc[0](Arg0: &Predict)
+	37: ImmBorrowField[3](Predict.vault: Vault)
+	38: Call vault::total_mtm(&Vault): u64
+	39: MoveLoc[0](Arg0: &Predict)
+	40: ImmBorrowField[3](Predict.vault: Vault)
+	41: Call vault::balance(&Vault): u64
+	42: Call pricing_config::quote_spread_from_fair_price(&PricingConfig, u64, u64, u64): u64
+	43: StLoc[11](loc7: u64)
+	44: CopyLoc[14](loc10: u64)
+	45: CopyLoc[11](loc7: u64)
+	46: Gt
+	47: BrFalse(53)
+B6:
+	48: CopyLoc[14](loc10: u64)
+	49: CopyLoc[11](loc7: u64)
+	50: Sub
+	51: StLoc[5](loc1: u64)
+	52: Branch(55)
+B7:
+	53: LdU64(0)
+	54: StLoc[5](loc1: u64)
+B8:
+	55: MoveLoc[5](loc1: u64)
+	56: StLoc[13](loc9: u64)
+	57: MoveLoc[14](loc10: u64)
+	58: MoveLoc[11](loc7: u64)
+	59: Add
+	60: LdU64(1000000000)
+	61: Call u64::min(u64, u64): u64
+	62: StLoc[12](loc8: u64)
+	63: LdU64(1000000000)
+	64: CopyLoc[12](loc8: u64)
+	65: Sub
+	66: StLoc[9](loc5: u64)
+	67: LdU64(1000000000)
+	68: CopyLoc[13](loc9: u64)
+	69: Sub
+	70: StLoc[8](loc4: u64)
+	71: ImmBorrowLoc[2](Arg2: MarketKey)
+	72: Call market_key::is_up(&MarketKey): bool
+	73: BrFalse(79)
+B9:
+	74: MoveLoc[12](loc8: u64)
+	75: MoveLoc[13](loc9: u64)
+	76: StLoc[7](loc3: u64)
+	77: StLoc[6](loc2: u64)
+	78: Branch(83)
+B10:
+	79: MoveLoc[8](loc4: u64)
+	80: MoveLoc[9](loc5: u64)
+	81: StLoc[7](loc3: u64)
+	82: StLoc[6](loc2: u64)
+B11:
+	83: MoveLoc[6](loc2: u64)
+	84: MoveLoc[7](loc3: u64)
+	85: Ret
+}
+
+range_trade_prices(Arg0: &Predict, Arg1: &OracleSVI, Arg2: RangeKey, Arg3: &Clock): u64 * u64 {
+L4:	loc0: u64
+L5:	loc1: u64
+L6:	loc2: u64
+L7:	loc3: u64
+L8:	loc4: u64
+L9:	loc5: u64
+L10:	loc6: u64
+B0:
+	0: CopyLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[2](Predict.oracle_config: OracleConfig)
+	2: CopyLoc[1](Arg1: &OracleSVI)
+	3: ImmBorrowLoc[2](Arg2: RangeKey)
+	4: Call oracle_config::assert_range_key_matches(&OracleConfig, &OracleSVI, &RangeKey)
+	5: CopyLoc[1](Arg1: &OracleSVI)
+	6: MoveLoc[3](Arg3: &Clock)
+	7: Call oracle_config::assert_quoteable_oracle(&OracleSVI, &Clock)
+	8: CopyLoc[1](Arg1: &OracleSVI)
+	9: ImmBorrowLoc[2](Arg2: RangeKey)
+	10: Call range_key::lower_strike(&RangeKey): u64
+	11: Call oracle::compute_price(&OracleSVI, u64): u64
+	12: StLoc[9](loc5: u64)
+	13: CopyLoc[1](Arg1: &OracleSVI)
+	14: ImmBorrowLoc[2](Arg2: RangeKey)
+	15: Call range_key::higher_strike(&RangeKey): u64
+	16: Call oracle::compute_price(&OracleSVI, u64): u64
+	17: StLoc[8](loc4: u64)
+	18: MoveLoc[9](loc5: u64)
+	19: MoveLoc[8](loc4: u64)
+	20: Sub
+	21: StLoc[7](loc3: u64)
+	22: MoveLoc[1](Arg1: &OracleSVI)
+	23: Call oracle::is_settled(&OracleSVI): bool
+	24: BrFalse(30)
+B1:
+	25: MoveLoc[0](Arg0: &Predict)
+	26: Pop
+	27: CopyLoc[7](loc3: u64)
+	28: MoveLoc[7](loc3: u64)
+	29: Ret
+B2:
+	30: CopyLoc[0](Arg0: &Predict)
+	31: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	32: CopyLoc[7](loc3: u64)
+	33: CopyLoc[0](Arg0: &Predict)
+	34: ImmBorrowField[3](Predict.vault: Vault)
+	35: Call vault::total_mtm(&Vault): u64
+	36: MoveLoc[0](Arg0: &Predict)
+	37: ImmBorrowField[3](Predict.vault: Vault)
+	38: Call vault::balance(&Vault): u64
+	39: Call pricing_config::quote_spread_from_fair_price(&PricingConfig, u64, u64, u64): u64
+	40: StLoc[10](loc6: u64)
+	41: CopyLoc[7](loc3: u64)
+	42: CopyLoc[10](loc6: u64)
+	43: Add
+	44: LdU64(1000000000)
+	45: Call u64::min(u64, u64): u64
+	46: StLoc[5](loc1: u64)
+	47: CopyLoc[7](loc3: u64)
+	48: CopyLoc[10](loc6: u64)
+	49: Gt
+	50: BrFalse(56)
+B3:
+	51: MoveLoc[7](loc3: u64)
+	52: MoveLoc[10](loc6: u64)
+	53: Sub
+	54: StLoc[4](loc0: u64)
+	55: Branch(58)
+B4:
+	56: LdU64(0)
+	57: StLoc[4](loc0: u64)
+B5:
+	58: MoveLoc[4](loc0: u64)
+	59: StLoc[6](loc2: u64)
+	60: MoveLoc[5](loc1: u64)
+	61: MoveLoc[6](loc2: u64)
+	62: Ret
+}
+
+resolve_ask_bounds(Arg0: &Predict, Arg1: ID): u64 * u64 {
+L2:	loc0: u64
+L3:	loc1: u64
+L4:	loc2: AskBounds
+L5:	loc3: u64
+L6:	loc4: u64
+L7:	loc5: Option<AskBounds>
+B0:
+	0: CopyLoc[0](Arg0: &Predict)
+	1: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	2: Call pricing_config::min_ask_price(&PricingConfig): u64
+	3: StLoc[6](loc4: u64)
+	4: CopyLoc[0](Arg0: &Predict)
+	5: ImmBorrowField[7](Predict.pricing_config: PricingConfig)
+	6: Call pricing_config::max_ask_price(&PricingConfig): u64
+	7: StLoc[5](loc3: u64)
+	8: MoveLoc[0](Arg0: &Predict)
+	9: ImmBorrowField[2](Predict.oracle_config: OracleConfig)
+	10: MoveLoc[1](Arg1: ID)
+	11: Call oracle_config::ask_bounds_override(&OracleConfig, ID): Option<AskBounds>
+	12: StLoc[7](loc5: Option<AskBounds>)
+	13: ImmBorrowLoc[7](loc5: Option<AskBounds>)
+	14: Call option::is_some<AskBounds>(&Option<AskBounds>): bool
+	15: BrFalse(30)
+B1:
+	16: MoveLoc[7](loc5: Option<AskBounds>)
+	17: Call option::destroy_some<AskBounds>(Option<AskBounds>): AskBounds
+	18: StLoc[4](loc2: AskBounds)
+	19: ImmBorrowLoc[4](loc2: AskBounds)
+	20: Call oracle_config::ask_bounds_min(&AskBounds): u64
+	21: MoveLoc[6](loc4: u64)
+	22: Call u64::max(u64, u64): u64
+	23: ImmBorrowLoc[4](loc2: AskBounds)
+	24: Call oracle_config::ask_bounds_max(&AskBounds): u64
+	25: MoveLoc[5](loc3: u64)
+	26: Call u64::min(u64, u64): u64
+	27: StLoc[3](loc1: u64)
+	28: StLoc[2](loc0: u64)
+	29: Branch(34)
+B2:
+	30: MoveLoc[6](loc4: u64)
+	31: MoveLoc[5](loc3: u64)
+	32: StLoc[3](loc1: u64)
+	33: StLoc[2](loc0: u64)
+B3:
+	34: MoveLoc[2](loc0: u64)
+	35: MoveLoc[3](loc1: u64)
+	36: Ret
+}
+
+assert_mintable_ask(Arg0: &Predict, Arg1: ID, Arg2: u64) {
+L3:	loc0: bool
+L4:	loc1: u64
+L5:	loc2: u64
+B0:
+	0: MoveLoc[0](Arg0: &Predict)
+	1: MoveLoc[1](Arg1: ID)
+	2: Call resolve_ask_bounds(&Predict, ID): u64 * u64
+	3: StLoc[4](loc1: u64)
+	4: StLoc[5](loc2: u64)
+	5: CopyLoc[2](Arg2: u64)
+	6: MoveLoc[5](loc2: u64)
+	7: Ge
+	8: BrFalse(14)
+B1:
+	9: MoveLoc[2](Arg2: u64)
+	10: MoveLoc[4](loc1: u64)
+	11: Le
+	12: StLoc[3](loc0: bool)
+	13: Branch(16)
+B2:
+	14: LdFalse
+	15: StLoc[3](loc0: bool)
+B3:
+	16: MoveLoc[3](loc0: bool)
+	17: BrFalse(19)
+B4:
+	18: Branch(21)
+B5:
+	19: LdConst[7](u64: 7)
+	20: Abort
+B6:
+	21: Ret
+}
+
+refresh_oracle_risk(Arg0: &mut Predict, Arg1: &OracleSVI) {
+L2:	loc0: bool
+L3:	loc1: vector<CurvePoint>
+L4:	loc2: u64
+L5:	loc3: u64
+L6:	loc4: ID
+B0:
+	0: CopyLoc[1](Arg1: &OracleSVI)
+	1: Call oracle::id(&OracleSVI): ID
+	2: StLoc[6](loc4: ID)
+	3: CopyLoc[0](Arg0: &mut Predict)
+	4: ImmBorrowField[3](Predict.vault: Vault)
+	5: CopyLoc[6](loc4: ID)
+	6: Call vault::oracle_strike_range(&Vault, ID): u64 * u64
+	7: StLoc[4](loc2: u64)
+	8: StLoc[5](loc3: u64)
+	9: CopyLoc[5](loc3: u64)
+	10: LdU64(0)
+	11: Eq
+	12: BrFalse(18)
+B1:
+	13: CopyLoc[4](loc2: u64)
+	14: LdU64(0)
+	15: Eq
+	16: StLoc[2](loc0: bool)
+	17: Branch(20)
+B2:
+	18: LdFalse
+	19: StLoc[2](loc0: bool)
+B3:
+	20: MoveLoc[2](loc0: bool)
+	21: BrFalse(30)
+B4:
+	22: MoveLoc[1](Arg1: &OracleSVI)
+	23: Pop
+	24: MoveLoc[0](Arg0: &mut Predict)
+	25: MutBorrowField[3](Predict.vault: Vault)
+	26: MoveLoc[6](loc4: ID)
+	27: LdU64(0)
+	28: Call vault::set_mtm(&mut Vault, ID, u64)
+	29: Ret
+B5:
+	30: CopyLoc[1](Arg1: &OracleSVI)
+	31: Call oracle::is_settled(&OracleSVI): bool
+	32: BrFalse(41)
+B6:
+	33: MoveLoc[0](Arg0: &mut Predict)
+	34: MutBorrowField[3](Predict.vault: Vault)
+	35: MoveLoc[6](loc4: ID)
+	36: MoveLoc[1](Arg1: &OracleSVI)
+	37: Call oracle::settlement_price(&OracleSVI): Option<u64>
+	38: Call option::destroy_some<u64>(Option<u64>): u64
+	39: Call vault::set_mtm_with_settlement(&mut Vault, ID, u64)
+	40: Ret
+B7:
+	41: CopyLoc[0](Arg0: &mut Predict)
+	42: ImmBorrowField[2](Predict.oracle_config: OracleConfig)
+	43: MoveLoc[1](Arg1: &OracleSVI)
+	44: MoveLoc[5](loc3: u64)
+	45: MoveLoc[4](loc2: u64)
+	46: Call oracle_config::build_curve(&OracleConfig, &OracleSVI, u64, u64): vector<CurvePoint>
+	47: StLoc[3](loc1: vector<CurvePoint>)
+	48: MoveLoc[0](Arg0: &mut Predict)
+	49: MutBorrowField[3](Predict.vault: Vault)
+	50: MoveLoc[6](loc4: ID)
+	51: ImmBorrowLoc[3](loc1: vector<CurvePoint>)
+	52: Call vault::set_mtm_with_curve(&mut Vault, ID, &vector<CurvePoint>)
+	53: Ret
+}
+
+Constants [
+	0 => u64: 0
+	1 => u64: 1
+	2 => u64: 2
+	3 => u64: 3
+	4 => u64: 4
+	5 => u64: 5
+	6 => u64: 6
+	7 => u64: 7
+	8 => u64: 8
+	9 => u64: 9
+]
+}

@@ -1,0 +1,109 @@
+# Task List: Predict Intent Engine
+
+- [x] Install dependencies (`npm install`) and project configuration
+- [x] Implement the core design system in `src/index.css`
+- [x] Implement `src/services/intentParser.ts` (Rule-based + Gemini parsing)
+- [x] Implement `src/services/transactionBuilder.ts` (Sui PTB compiler)
+- [x] Implement `src/services/guardian.ts` (Slippage & Stale Oracle checking)
+- [x] Create `src/components/WalletProvider.tsx` for Sui DApp-Kit integration
+- [x] Create `src/components/ChatInterface.tsx` (Chat, PTB Preview, Guardian panels)
+- [x] Connect everything in `src/App.tsx` and clean up boilerplate files
+- [x] Build and verify local dev execution
+- [x] Fix the `UnusedValueWithoutDrop` error on the `supply` command by transferring returned PLP coin to the user address
+- [x] Fetch and display the user's real `dUSDC` wallet balance dynamically in the bottom-right panel
+- [x] Synchronize Windows changes with the WSL backend environment and verify compilation
+- [x] Revamp the UI layout in `ChatInterface.tsx`
+  - [x] Add Command Reference section in the left sidebar
+  - [x] Implement Quick Action hotkey pills above the input field
+  - [x] Implement the Account Profile card in the right sidebar
+  - [x] Implement the Command History logger and replay buttons
+- [x] Verify compilation and build on Windows
+- [x] Sync changes to WSL and compile on WSL
+- [x] Relocate technical IDs to Advanced Config & Add Left Sidebar Market/Gas Dashboard
+  - [x] Move IDs to Profile tab advanced configuration collapsible accordion
+  - [x] Implement live TPS, gas fee, and oracle details dashboard in left sidebar
+- [x] Build & Verify Windows and WSL compilations
+- [x] Implement in-place Message Editing feature
+  - [x] Update ChatMessage interface to link parentMessageId and histId
+  - [x] Implement editing states and handleEditMessage processing logic
+  - [x] Add inline edit controls and inputs to the chat log UI
+  - [x] Verify build and sync to WSL
+- [x] Fix parsing of strike prices with suffixes (e.g. "65k") to prevent assert_valid_strike aborts, verify on-chain, and sync the built bundle to WSL.
+- [x] Implement Autocorrect Spell-checking Engine for trading commands
+  - [x] Create Levenshtein distance and direct dictionary mapping for action typos
+  - [x] Feed corrected text into local rule-based parsing engine
+  - [x] Implement inline UI notification showing when a user's typo has been corrected
+- [x] Resolve mobile responsiveness issues
+  - [x] Add 768px media queries in CSS to handle layouts on narrower screens
+  - [x] Enable touch-scrollable horizontal hotkey rows and adaptive drawer widths
+  - [x] Bundle and sync verified builds to the WSL backend directory
+  - [x] Implement settings & hamburger sidebar toggle buttons directly in the header
+  - [x] Move the wallet dUSDC balance display to the header top-right, next to the Connect Button
+  - [x] Remove the bottom mobile control bar to maximize vertical chat log height
+  - [x] Shrink quick-action hotkey pills on mobile and reduce horizontal gaps to optimize space
+- [x] Clear dummy portfolio positions to initialize empty and update dynamically
+- [x] Display placeholder message when there are no active positions
+- [x] Create interactive Platform FAQ section for LPs and option traders explaining returns, liquidity, and cancellations
+- [x] Display rolling countdown timers and exact settlement times in positions cards and command history items
+- [x] Display estimated winnings (+85%) and total payouts (1.85x) inside agent PTB compilation logs
+- [x] Disable option cancellations on signed trades to prevent market gaming
+- [x] Build interactive position details popup modal showing assets, strike, wagers, yields, and Suiscan Explorer link
+- [x] Implement responsive layout style adjustments for details popup modal and FAQ accordion
+- [x] Verify production builds successfully compile with zero warnings
+- [x] Resolve on-chain MoveAbort abort code 7 (`assert_mintable_ask`) on out-of-the-money option bets (e.g. 68k) by querying actual oracle spot prices from Sui Testnet RPC
+- [x] Integrate pre-flight dry-run query (`get_trade_amounts` inside `sui_devInspectTransactionBlock`) in the Guardian safety layer to catch zero-payout unmintable strikes before user signs
+- [x] Implement dynamic strike recommendations and click-to-run buttons in the Guardian warning boxes
+- [x] Fetch live oracle spot price dynamically from RPC in ChatInterface and update the Market Monitor feed
+- [x] Reposition chat avatars (processor chip/user icon) above message bubbles to resolve mobile horizontal wrapping/alignment issues
+- [x] Add localStorage state persistence for Predict Manager ID, chat logs, command history, and positions bets scoped by wallet address
+- [x] Verify local production compilation builds successfully
+- [x] Refactor Settings Left Sidebar UI
+  - [x] Remove dUSDC Faucet box
+  - [x] Add Mainnet Bridge & Deposit Guide card with instructions and connected network checker
+  - [x] Remove Gemini API Key input field
+  - [x] Add Slippage Tolerance Controller buttons and custom input
+  - [x] Add Max Gas Fee Cap slider
+  - [x] Add Demo Mode Sandbox toggle switch card
+- [x] Move Gemini API Key to Right Sidebar
+  - [x] Add "Developer API Settings" to Advanced Configuration accordion
+  - [x] Add Gemini API Key input field and local storage sync
+- [x] Integrate Demo Mode logic in execution handlers
+  - [x] Mock handleExecutePTB with instant simulated success digests and positions
+  - [x] Mock handleCreateManager with instant simulated manager creation
+  - [x] Bypass wallet connection check when Demo Mode is active
+- [x] Add Guardian Risk Score Badge
+  - [x] Compute strike distance percentage relative to spot price
+  - [x] Render styled Safe/Balanced, Moderate Risk, and High Risk/Degen badges in the compiled PTB preview block
+- [x] Verify local compilation and responsive UI layout styling
+- [x] Integrate Voice Note Transcription (Web Speech API)
+  - [x] Add Mic icon import to ChatInterface.tsx
+  - [x] Add isListening state and recognitionRef hooks
+  - [x] Initialize SpeechRecognition inside useEffect with event bindings
+  - [x] Bind onresult to auto-trigger executeCommandText pipeline
+  - [x] Add voice error reporting inside the agent chat log
+  - [x] Render styled pulsing Mic button in the chat input panel
+- [x] Verify local compilation and voice execution flows
+- [x] Create Landing Page for Deepbook P.I.E. (Predict Intent Engine)
+  - [x] Create LandingPage.tsx with styled layout, features list, and interactive onboarding flow
+  - [x] Connect LandingPage and ChatInterface view toggling in App.tsx
+  - [x] Create linear gradient glowing SVG PieLogo component
+  - [x] Replace Cpu icon in ChatInterface header with the new PieLogo
+  - [x] Update logo name and tag to Deepbook P.I.E. and Predict Engine
+  - [x] Update default welcoming agent chat bubbles with Pie branding
+  - [x] Verify local production bundle compiles successfully
+- [x] Refactor state loading and saving hooks in ChatInterface.tsx to resolve the localStorage overwrite race condition
+- [x] Implement demo-specific persistence keys (e.g. predict_positions_demo, predict_manager_id_demo) for persistent sandbox sessions
+- [x] Allow editing and viewing of simulated Predict Manager ID in advanced settings during Demo Mode
+- [x] Verify that production build compiles without warnings
+- [x] Fix dashboard crash (blank screen) on clicking Profile & History tab by correctly parsing loaded command history dates and hardening UI date rendering calls
+- [x] Add dynamic outcomes (Won/Lost/Expired) to active positions cards and the details popup modal, showing exact payouts/losses for settled options
+- [x] Integrate redeem payouts warning notification in agent chat logs upon successful option betting
+- [x] Swap Close Details button for a Redeem Payout button in the details modal popup for settled won options to trigger claim flows
+- [x] Implement background checker loop in ChatInterface.tsx to auto-settle expired options
+- [x] Inject real-time settled Won/Lost notification messages inside the middle chat panel
+- [x] Embed inline redeem payout action buttons inside chat notification bubbles to sign claims directly from the chat timeline
+- [x] Support demo-mode balance tracking (starting at 10,000 dUSDC) to deduct/credit mock funds interactively
+- [x] Integrate detailed post-transaction guidelines for LP vault suppliers
+- [x] Implement localStorage state migrations to clean up old styled HTML elements
+- [x] Fix pre-flight check failure on valid strikes by querying the ask/premium price ratio (index 0) instead of the bid price ratio (index 1) in get_trade_amounts return values.
+- [x] Add styled dynamic "Withdraw [amount] LP" button inside LP position details modal popup to trigger withdraw/unstake flows without state tampering.

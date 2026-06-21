@@ -1,0 +1,506 @@
+
+Module: i64
+
+Module: market_key
+
+Module: math
+
+Module: oracle
+  Constant #0: Type Token: 8, String: "........	F..................5.3.5.5 5.1.0...9.:.2." (len: 54)
+  Constant #1: Type Token: 56, String: "......................................." (len: 43)
+  Constant #2: Type Token: 8, String: ".........." (len: 10)
+
+Module: oracle_config
+  Constant #0: Type Token: 2, String: "......." (len: 7)
+  Constant #1: Type Token: 4, String: "......." (len: 7)
+  Constant #2: Type Token: 46, String: "....." (len: 5)
+  Constant #3: Type Token: 58, String: "...././.....-...0.................." (len: 35)
+  Constant #4: Type Token: 3, U8: 6
+  Constant #5: Type Token: 8, String: "..." (len: 3)
+  Constant #6: Type Token: 6, U64: 146368139075453185
+  Constant #7: Type Token: 4, String: "...
+..." (len: 7)
+  Constant #8: Type Token: 5, String: "......." (len: 7)
+  Constant #9: Type Token: 6, String: "..." (len: 3)
+  Constant #10: Type Token: 8, String: ".." (len: 2)
+  Constant #11: Type Token: 5, String: "......" (len: 6)
+  Constant #12: Type Token: 8, String: "........." (len: 10)
+  Constant #13: Type Token: 6, U64: 578151835647542021
+  Constant #14: Type Token: 5, String: "......" (len: 6)
+  Constant #15: Type Token: 6, U64: 362546375780992517
+  Constant #16: Type Token: 6, U64: 362546375797638153
+  Constant #17: Type Token: 3, String: ".
+." (len: 3)
+  Constant #18: Type Token: 3, String: "...." (len: 4)
+  Constant #19: Type Token: 10, String: "..." (len: 3)
+  Constant #20: Type Token: 3, String: "..
+" (len: 3)
+  Constant #21: Type Token: 8, String: "..." (len: 3)
+  Constant #22: Type Token: 6, String: "........
+." (len: 10)
+  Constant #23: Type Token: 0, U8: 11
+  Constant #24: Type Token: 11, String: "	." (len: 2)
+  Constant #25: Type Token: 9, U8: 2
+  Constant #26: Type Token: 8, String: ".........." (len: 10)
+  Constant #27: Type Token: 11, String: ".	.	.	.	..." (len: 11)
+  Constant #28: Type Token: 1, U64: 362546375680329482
+  Constant #29: Type Token: 6, U64: 722828861314040070
+  Constant #30: Type Token: 2, String: ".	.	" (len: 6)
+  Constant #31: Type Token: 1, String: "......	" (len: 9)
+  Constant #32: Type Token: 0, String: ".	...	..	" (len: 9)
+  Constant #33: Type Token: 1, U8: 6
+  Constant #34: Type Token: 9, U8: 1
+  Constant #35: Type Token: 8, U8: 1
+  Constant #36: Type Token: 9, String: "" (len: 0)
+  Constant #37: Type Token: 1, String: "..	......
+." (len: 11)
+
+Module: plp
+  Constant #0: Type Token: 5, String: ".." (len: 2)
+  Constant #1: Type Token: 10, String: "" (len: 0)
+  Constant #2: Type Token: 1, String: "" (len: 0)
+  Constant #3: Type Token: 1, String: "....	.	........" (len: 18)
+  Constant #4: Type Token: 1, U8: 12
+
+Module: predict
+  Constant #0: Type Token: 71, String: "...L..O..L..L..L..S...2g....j......d..g..i..k..q..s..z.z.........................................................................." (len: 137)
+  Constant #1: Type Token: 8, String: "............ " (len: 15)
+  Constant #2: Type Token: 1, String: "........" (len: 9)
+  Constant #3: Type Token: 32, U8: 8
+  Constant #4: Type Token: 20, String: ".." (len: 4)
+  Constant #5: Type Token: 32, U8: 8
+  Constant #6: Type Token: 20, String: "......" (len: 6)
+  Constant #7: Type Token: 11, String: ".	.....	.................	.." (len: 32)
+  Constant #8: Type Token: 7, U64: 226033258360931597
+  Constant #9: Type Token: 3, String: "......" (len: 7)
+  Constant #10: Type Token: 1, U8: 3
+  Constant #11: Type Token: 1, String: "....." (len: 6)
+  Constant #12: Type Token: 7, U64: 361146723248242957
+  Constant #13: Type Token: 7, U64: 220685203856164365
+  Constant #14: Type Token: 3, String: "..." (len: 4)
+  Constant #15: Type Token: 3, String: "....." (len: 6)
+  Constant #16: Type Token: 6, U64: 2236043868028404255
+  Constant #17: Type Token: 3, String: "....." (len: 6)
+  Constant #18: Type Token: 8, String: "............" (len: 13)
+  Constant #19: Type Token: 8, String: ".............." (len: 15)
+  Constant #20: Type Token: 13, String: "......" (len: 6)
+  Constant #21: Type Token: 11, String: ".	.............	.............." (len: 30)
+  Constant #22: Type Token: 14, String: ".." (len: 2)
+  Constant #23: Type Token: 15, String: "......" (len: 6)
+  Constant #24: Type Token: 1, String: "......" (len: 6)
+  Constant #25: Type Token: 8, String: "..............	.......	.........." (len: 35)
+  Constant #26: Type Token: 3, String: "......." (len: 7)
+  Constant #27: Type Token: 13, U8: 6
+  Constant #28: Type Token: 9, String: "" (len: 0)
+  Constant #29: Type Token: 1, U64: 144123988950909205
+  Constant #30: Type Token: 6, U64: 79950992577660431
+  Constant #31: Type Token: 3, U8: 11
+  Constant #32: Type Token: 28, U8: 9
+  Constant #33: Type Token: 0, String: "..." (len: 3)
+  Constant #34: Type Token: 8, String: "..... .	...........	............." (len: 35)
+  Constant #35: Type Token: 8, String: "......................." (len: 23)
+  Constant #36: Type Token: 3, String: " ." (len: 3)
+  Constant #37: Type Token: 9, String: "" (len: 0)
+  Constant #38: Type Token: 3, String: ".." (len: 2)
+  Constant #39: Type Token: 27, U64: 226033318490473507
+  Constant #40: Type Token: 3, String: ".." (len: 2)
+  Constant #41: Type Token: 27, String: ".." (len: 3)
+  Constant #42: Type Token: 1, String: "........." (len: 9)
+  Constant #43: Type Token: 3, String: "..." (len: 3)
+  Constant #44: Type Token: 6, String: " .	........" (len: 11)
+  Constant #45: Type Token: 24, String: "..." (len: 3)
+  Constant #46: Type Token: 1, U64: 2534516220887316
+  Constant #47: Type Token: 3, String: "..." (len: 3)
+  Constant #48: Type Token: 8, String: "....	....." (len: 11)
+  Constant #49: Type Token: 7, String: "..." (len: 3)
+  Constant #50: Type Token: 3, String: "..." (len: 3)
+  Constant #51: Type Token: 11, String: ".	. .	........................" (len: 33)
+  Constant #52: Type Token: 19, U8: 6
+  Constant #53: Type Token: 8, String: "..........	...	......
+........" (len: 31)
+  Constant #54: Type Token: 6, String: "......." (len: 7)
+  Constant #55: Type Token: 7, U64: 290483370100916517
+  Constant #56: Type Token: 2, String: "......." (len: 7)
+  Constant #57: Type Token: 6, U64: 576745538968880655
+  Constant #58: Type Token: 6, String: "..." (len: 3)
+  Constant #59: Type Token: 6, U64: 146094313569781263
+  Constant #60: Type Token: 7, U64: 578435509680931609
+  Constant #61: Type Token: 24, String: "..." (len: 3)
+  Constant #62: Type Token: 31, String: ".." (len: 2)
+  Constant #63: Type Token: 24, String: "......" (len: 6)
+  Constant #64: Type Token: 2, String: "......" (len: 6)
+  Constant #65: Type Token: 1, String: ". " (len: 3)
+  Constant #66: Type Token: 1, String: "........." (len: 9)
+  Constant #67: Type Token: 8, String: "...." (len: 5)
+  Constant #68: Type Token: 3, String: "..." (len: 3)
+  Constant #69: Type Token: 3, String: "..." (len: 3)
+  Constant #70: Type Token: 15, String: "..." (len: 3)
+  Constant #71: Type Token: 22, String: "..." (len: 3)
+  Constant #72: Type Token: 3, String: "..." (len: 3)
+  Constant #73: Type Token: 3, String: "..........." (len: 11)
+  Constant #74: Type Token: 11, String: "..........	...........
+...." (len: 28)
+  Constant #75: Type Token: 8, String: "..........
+.........
+..	AskBounds.B" (len: 35)
+  Constant #76: Type Token: 97, String: "ance.Clock.Coin.Currency
+CurvePoint.ID	MarketKey.Option.OracleAskBoundsCleared.OracleAskBoundsSetOracleConf" (len: 108)
+  Constant #77: Type Token: 105, String: "	OracleSVIOracleSVICap.PLP.PositionMinted.PositionRedeemed.Predict.PredictManagerPricingConfig.Pricin" (len: 103)
+  Constant #78: Type Token: 103, String: "onfigUpdated.QuoteAssetDisabled.QuoteAssetEnabled.RangeKeyRangeMin" (len: 67)
+  Constant #79: Type Token: 116, String: "dRangeRedeemedRateLimiter
+RiskConfig.RiskConfigUpdated.Supplied.TradingPauseUpdatedTreasuryCap.Tre" (len: 101)
+  Constant #80: Type Token: 97, String: "uryConfig	TxContext.TypeName.UID.Vault.VecSet	Withdrawn.accept_payment.accepted_quotes.add_oracle_grid.add_quote_as" (len: 115)
+  Constant #81: Type Token: 115, String: "t.amount
+ask_bounds.ask_bounds_max.ask_bounds_min.ask_bounds_override	ask_price.assert_authorized_cap" (len: 101)
+  Constant #82: Type Token: 18, String: "ssert_key_matches.assert_live_oracle.assert_mintable_ask.assert_quote_asset.assert_quoteable_orac" (len: 97)
+  Constant #83: Type Token: 108, String: ".assert_range_key_matches.assert_total_exposure.available_withdrawal.balancebase_spread	bid_pricebu" (len: 101)
+  Constant #84: Type Token: 105, String: "d_curve.burn.clear_oracle_ask_bounds.clock.coincoin_registry.compact_settled_oracle compact_settled_oracle_" (len: 108)
+  Constant #85: Type Token: 105, String: "_neededcompute_price.consume.cost.create.create_manager.decrease_position.decrease_range.deposit.depo" (len: 102)
+  Constant #86: Type Token: 115, String: "t_permissionlessdestroy_some.disable.disable_quote_asset.disable_withdrawal_limiter.dispense_payout.div." (len: 105)
+  Constant #87: Type Token: 101, String: "it.emit_pricing_config_updated.enable.enable_quote_asset.enable_withdrawal_limiter.event.executor.expiryfrom" (len: 109)
+  Constant #88: Type Token: 95, String: "alance.get_range_trade_amounts.get_trade_amounts.has_settled_oraclehigher_strike.id.increase_posi" (len: 98)
+  Constant #89: Type Token: 116, String: "on.increase_range.init_oracle_matrix.insert_positioninsert_rangeinto_balance
+is_settled.is_some.is_upl" (len: 105)
+  Constant #90: Type Token: 111, String: "er_strike
+manager_id
+market_key.math.maxmax_ask_price.max_total_exposure_pct.minmin_ask_price
+min_spread.mint
+mint_ra" (len: 119)
+  Constant #91: Type Token: 110, String: "e.mul.mul_div_round_down.new.object.option.oracleoracle_config	oracle_id.oracle_strike_range.owner.pau" (len: 103)
+  Constant #92: Type Token: 115, String: "d.payout.plp.predict
+predict_id.predict_manager.pricing_config.quantityquote_asset.quote_spread_from" (len: 101)
+  Constant #93: Type Token: 95, String: "air_price	range_key.range_trade_pricesrate_limiter.record_deposit.redeem.redeem_internal.redeem_permi" (len: 102)
+  Constant #94: Type Token: 115, String: "ionlessredeem_range.redeem_settled_position.refresh_oracle_risk.registry.remove_position.remove_quote_assetremove" (len: 115)
+  Constant #95: Type Token: 95, String: "ange.resolve_ask_boundsrisk_config.sender.set_base_spread.set_max_ask_price.set_max_total_exposure_pct.set_min_as" (len: 114)
+  Constant #96: Type Token: 107, String: "price.set_min_spread.set_mtm.set_mtm_with_curve.set_mtm_with_settlement.set_oracle_ask_bounds.s" (len: 95)
+  Constant #97: Type Token: 101, String: "_trading_paused.set_utilization_multiplier.settlement_priceshare_objectshares_burnedshares_minted.shares_to_amoun" (len: 116)
+  Constant #98: Type Token: 116, String: "strike" (len: 6)
+  Constant #99: Type Token: 8, String: "upplier.supply.total_max_payout	total_mtmtotal_supplytrade_prices.trader.trading_paused.transfertreasury_cap.tre" (len: 115)
+  Constant #100: Type Token: 97, String: "ury_config
+tx_context	type_name.u64update_config.update_withdrawal_limiter.utilization_multiplier.value.vaultvaul" (len: 115)
+  Constant #101: Type Token: 116, String: "value.vec_set.with_defining_ids.withdraw.withdrawal_limiter
+withdrawer...7I..nVP..S.q.......6.." (len: 95)
+  Constant #102: Type Token: 248, String: "..xQ8.........................................................................j.....P. ..i......i...." (len: 104)
+  Constant #103: Type Token: 0, String: "" (len: 0)
+  Constant #104: Type Token: 0, String: "" (len: 0)
+  Constant #105: Type Token: 0, String: "" (len: 0)
+  Constant #106: Type Token: 0, String: "..." (len: 3)
+  Constant #107: Type Token: 0, String: "" (len: 0)
+  Constant #108: Type Token: 0, String: "" (len: 0)
+  Constant #109: Type Token: 0, String: "" (len: 0)
+  Constant #110: Type Token: 3, U64: 2
+  Constant #111: Type Token: 3, U64: 3
+  Constant #112: Type Token: 3, U64: 4
+  Constant #113: Type Token: 3, U64: 5
+  Constant #114: Type Token: 3, U64: 6
+  Constant #115: Type Token: 3, U64: 7
+  Constant #116: Type Token: 3, U64: 8
+  Constant #117: Type Token: 3, U64: 9
+  Constant #118: Type Token: 0, String: "." (len: 2)
+  Constant #119: Type Token: 1, U64: 9873299626978208803
+  Constant #120: Type Token: 1, U64: 120474979996827165
+  Constant #121: Type Token: 3, String: "....G.0.......l.....Z.............j.........h.......l..............k......G.0.......l..............k..." (len: 106)
+  Constant #122: Type Token: 136, U8: 3
+  Constant #123: Type Token: 130, U8: 3
+  Constant #124: Type Token: 60, String: "h.." (len: 3)
+  Constant #125: Type Token: 2, String: ".." (len: 2)
+  Constant #126: Type Token: 8, String: "............t....s.p...........s.p." (len: 35)
+  Constant #127: Type Token: 7, String: ".." (len: 2)
+  Constant #128: Type Token: 1, U64: 9584225190968589859
+  Constant #129: Type Token: 1, U64: 109495973704855843
+  Constant #130: Type Token: 8, String: "....
+............................" (len: 35)
+  Constant #131: Type Token: 2, String: "....." (len: 5)
+  Constant #132: Type Token: 1, String: "....." (len: 5)
+  Constant #133: Type Token: 3, String: "..	a..........................................I.............
+..........................
+.....
+...J..	...............
+.... .................
+......" (len: 169)
+  Constant #134: Type Token: 0, String: "" (len: 0)
+  Constant #135: Type Token: 0, String: "" (len: 0)
+  Constant #136: Type Token: 36, String: "..8" (len: 4)
+  Constant #137: Type Token: 0, U8: 11
+
+Module: predict_manager
+  Constant #0: Type Token: 7, String: ".......	.....-...." (len: 18)
+  Constant #1: Type Token: 9, String: "..................... ..............." (len: 44)
+  Constant #2: Type Token: 1, U64: 576751049176711429
+  Constant #3: Type Token: 6, String: "..." (len: 3)
+
+Module: pricing_config
+
+Module: range_key
+  Constant #0: Type Token: 77, String: "............." (len: 13)
+  Constant #1: Type Token: 7, String: "" (len: 0)
+  Constant #2: Type Token: 0, String: "....." (len: 5)
+  Constant #3: Type Token: 2, String: "..." (len: 3)
+  Constant #4: Type Token: 2, String: "...." (len: 4)
+  Constant #5: Type Token: 4, String: "" (len: 0)
+  Constant #6: Type Token: 0, String: "..." (len: 3)
+  Constant #7: Type Token: 4, U64: 72066394476446465
+  Constant #8: Type Token: 6, U64: 144118490923008256
+  Constant #9: Type Token: 73, String: ".RangeKey.expiryhigher_strikelower_strike.new.object	oracle_id	ran" (len: 68)
+  Constant #10: Type Token: 103, String: "_key...7I..nVP..S.q.......6...h..xQ8...........................................................
+.
+.." (len: 101)
+  Constant #11: Type Token: 4, String: "....." (len: 5)
+  Constant #12: Type Token: 11, String: "" (len: 0)
+  Constant #13: Type Token: 11, U8: 11
+  Constant #14: Type Token: 2, String: ".........." (len: 11)
+  Constant #15: Type Token: 0, U128: 0014020201000005040b001001140203 (LE bigint)
+  Constant #16: Type Token: 1, String: "" (len: 0)
+  Constant #17: Type Token: 0, String: "...." (len: 5)
+  Constant #18: Type Token: 20, String: ".." (len: 2)
+  Constant #19: Type Token: 0, String: "" (len: 0)
+  Constant #20: Type Token: 5, String: "..." (len: 4)
+  Constant #21: Type Token: 20, String: ".." (len: 2)
+  Constant #22: Type Token: 0, U8: 0
+  Constant #23: Type Token: 2, String: "" (len: 0)
+  Constant #24: Type Token: 3, String: "" (len: 0)
+  Constant #25: Type Token: undefined, String: "" (len: 0)
+  Constant #26: Type Token: undefined, String: "" (len: 0)
+  Constant #27: Type Token: undefined, String: "" (len: 0)
+  Constant #28: Type Token: undefined, String: "" (len: 0)
+  Constant #29: Type Token: undefined, String: "" (len: 0)
+  Constant #30: Type Token: undefined, String: "" (len: 0)
+  Constant #31: Type Token: undefined, String: "" (len: 0)
+  Constant #32: Type Token: undefined, String: "" (len: 0)
+  Constant #33: Type Token: undefined, String: "" (len: 0)
+  Constant #34: Type Token: undefined, String: "" (len: 0)
+  Constant #35: Type Token: undefined, String: "" (len: 0)
+  Constant #36: Type Token: undefined, String: "" (len: 0)
+  Constant #37: Type Token: undefined, String: "" (len: 0)
+  Constant #38: Type Token: undefined, String: "" (len: 0)
+  Constant #39: Type Token: undefined, String: "" (len: 0)
+  Constant #40: Type Token: undefined, String: "" (len: 0)
+  Constant #41: Type Token: undefined, String: "" (len: 0)
+  Constant #42: Type Token: undefined, String: "" (len: 0)
+  Constant #43: Type Token: undefined, String: "" (len: 0)
+  Constant #44: Type Token: undefined, String: "" (len: 0)
+  Constant #45: Type Token: undefined, String: "" (len: 0)
+  Constant #46: Type Token: undefined, String: "" (len: 0)
+  Constant #47: Type Token: undefined, String: "" (len: 0)
+  Constant #48: Type Token: undefined, String: "" (len: 0)
+  Constant #49: Type Token: undefined, String: "" (len: 0)
+  Constant #50: Type Token: undefined, String: "" (len: 0)
+  Constant #51: Type Token: undefined, String: "" (len: 0)
+  Constant #52: Type Token: undefined, String: "" (len: 0)
+  Constant #53: Type Token: undefined, String: "" (len: 0)
+  Constant #54: Type Token: undefined, String: "" (len: 0)
+  Constant #55: Type Token: undefined, String: "" (len: 0)
+  Constant #56: Type Token: undefined, String: "" (len: 0)
+  Constant #57: Type Token: undefined, String: "" (len: 0)
+  Constant #58: Type Token: undefined, String: "" (len: 0)
+  Constant #59: Type Token: undefined, String: "" (len: 0)
+  Constant #60: Type Token: undefined, String: "" (len: 0)
+  Constant #61: Type Token: undefined, String: "" (len: 0)
+  Constant #62: Type Token: undefined, String: "" (len: 0)
+  Constant #63: Type Token: undefined, String: "" (len: 0)
+  Constant #64: Type Token: undefined, String: "" (len: 0)
+  Constant #65: Type Token: undefined, String: "" (len: 0)
+  Constant #66: Type Token: undefined, String: "" (len: 0)
+  Constant #67: Type Token: undefined, String: "" (len: 0)
+  Constant #68: Type Token: undefined, String: "" (len: 0)
+  Constant #69: Type Token: undefined, String: "" (len: 0)
+  Constant #70: Type Token: undefined, String: "" (len: 0)
+  Constant #71: Type Token: undefined, String: "" (len: 0)
+  Constant #72: Type Token: undefined, String: "" (len: 0)
+  Constant #73: Type Token: undefined, String: "" (len: 0)
+  Constant #74: Type Token: undefined, String: "" (len: 0)
+  Constant #75: Type Token: undefined, String: "" (len: 0)
+  Constant #76: Type Token: undefined, String: "" (len: 0)
+  Constant #77: Type Token: undefined, String: "" (len: 0)
+  Constant #78: Type Token: undefined, String: "" (len: 0)
+  Constant #79: Type Token: undefined, String: "" (len: 0)
+  Constant #80: Type Token: undefined, String: "" (len: 0)
+  Constant #81: Type Token: undefined, String: "" (len: 0)
+  Constant #82: Type Token: undefined, String: "" (len: 0)
+  Constant #83: Type Token: undefined, String: "" (len: 0)
+  Constant #84: Type Token: undefined, String: "" (len: 0)
+  Constant #85: Type Token: undefined, String: "" (len: 0)
+  Constant #86: Type Token: undefined, String: "" (len: 0)
+  Constant #87: Type Token: undefined, String: "" (len: 0)
+  Constant #88: Type Token: undefined, String: "" (len: 0)
+  Constant #89: Type Token: undefined, String: "" (len: 0)
+  Constant #90: Type Token: undefined, String: "" (len: 0)
+  Constant #91: Type Token: undefined, String: "" (len: 0)
+  Constant #92: Type Token: undefined, String: "" (len: 0)
+  Constant #93: Type Token: undefined, String: "" (len: 0)
+  Constant #94: Type Token: undefined, String: "" (len: 0)
+  Constant #95: Type Token: undefined, String: "" (len: 0)
+  Constant #96: Type Token: undefined, String: "" (len: 0)
+  Constant #97: Type Token: undefined, String: "" (len: 0)
+  Constant #98: Type Token: undefined, String: "" (len: 0)
+  Constant #99: Type Token: undefined, String: "" (len: 0)
+  Constant #100: Type Token: undefined, String: "" (len: 0)
+  Constant #101: Type Token: undefined, String: "" (len: 0)
+  Constant #102: Type Token: undefined, String: "" (len: 0)
+  Constant #103: Type Token: undefined, String: "" (len: 0)
+  Constant #104: Type Token: undefined, String: "" (len: 0)
+  Constant #105: Type Token: undefined, String: "" (len: 0)
+  Constant #106: Type Token: undefined, String: "" (len: 0)
+  Constant #107: Type Token: undefined, String: "" (len: 0)
+  Constant #108: Type Token: undefined, String: "" (len: 0)
+  Constant #109: Type Token: undefined, String: "" (len: 0)
+  Constant #110: Type Token: undefined, String: "" (len: 0)
+  Constant #111: Type Token: undefined, String: "" (len: 0)
+  Constant #112: Type Token: undefined, String: "" (len: 0)
+  Constant #113: Type Token: undefined, String: "" (len: 0)
+  Constant #114: Type Token: undefined, String: "" (len: 0)
+  Constant #115: Type Token: undefined, String: "" (len: 0)
+  Constant #116: Type Token: undefined, String: "" (len: 0)
+  Constant #117: Type Token: undefined, String: "" (len: 0)
+  Constant #118: Type Token: undefined, String: "" (len: 0)
+  Constant #119: Type Token: undefined, String: "" (len: 0)
+  Constant #120: Type Token: undefined, String: "" (len: 0)
+  Constant #121: Type Token: undefined, String: "" (len: 0)
+  Constant #122: Type Token: undefined, String: "" (len: 0)
+  Constant #123: Type Token: undefined, String: "" (len: 0)
+  Constant #124: Type Token: undefined, String: "" (len: 0)
+  Constant #125: Type Token: undefined, String: "" (len: 0)
+  Constant #126: Type Token: undefined, String: "" (len: 0)
+  Constant #127: Type Token: undefined, String: "" (len: 0)
+  Constant #128: Type Token: undefined, String: "" (len: 0)
+  Constant #129: Type Token: undefined, String: "" (len: 0)
+  Constant #130: Type Token: undefined, String: "" (len: 0)
+  Constant #131: Type Token: undefined, String: "" (len: 0)
+  Constant #132: Type Token: undefined, String: "" (len: 0)
+  Constant #133: Type Token: undefined, String: "" (len: 0)
+  Constant #134: Type Token: undefined, String: "" (len: 0)
+  Constant #135: Type Token: undefined, String: "" (len: 0)
+  Constant #136: Type Token: undefined, String: "" (len: 0)
+  Constant #137: Type Token: undefined, String: "" (len: 0)
+  Constant #138: Type Token: undefined, String: "" (len: 0)
+  Constant #139: Type Token: undefined, String: "" (len: 0)
+  Constant #140: Type Token: undefined, String: "" (len: 0)
+  Constant #141: Type Token: undefined, String: "" (len: 0)
+  Constant #142: Type Token: undefined, String: "" (len: 0)
+  Constant #143: Type Token: undefined, String: "" (len: 0)
+  Constant #144: Type Token: undefined, String: "" (len: 0)
+  Constant #145: Type Token: undefined, String: "" (len: 0)
+  Constant #146: Type Token: undefined, String: "" (len: 0)
+  Constant #147: Type Token: undefined, String: "" (len: 0)
+  Constant #148: Type Token: undefined, String: "" (len: 0)
+  Constant #149: Type Token: undefined, String: "" (len: 0)
+  Constant #150: Type Token: undefined, String: "" (len: 0)
+  Constant #151: Type Token: undefined, String: "" (len: 0)
+  Constant #152: Type Token: undefined, String: "" (len: 0)
+  Constant #153: Type Token: undefined, String: "" (len: 0)
+  Constant #154: Type Token: undefined, String: "" (len: 0)
+  Constant #155: Type Token: undefined, String: "" (len: 0)
+  Constant #156: Type Token: undefined, String: "" (len: 0)
+  Constant #157: Type Token: undefined, String: "" (len: 0)
+  Constant #158: Type Token: undefined, String: "" (len: 0)
+  Constant #159: Type Token: undefined, String: "" (len: 0)
+  Constant #160: Type Token: undefined, String: "" (len: 0)
+  Constant #161: Type Token: undefined, String: "" (len: 0)
+  Constant #162: Type Token: undefined, String: "" (len: 0)
+  Constant #163: Type Token: undefined, String: "" (len: 0)
+  Constant #164: Type Token: undefined, String: "" (len: 0)
+  Constant #165: Type Token: undefined, String: "" (len: 0)
+  Constant #166: Type Token: undefined, String: "" (len: 0)
+  Constant #167: Type Token: undefined, String: "" (len: 0)
+  Constant #168: Type Token: undefined, String: "" (len: 0)
+  Constant #169: Type Token: undefined, String: "" (len: 0)
+  Constant #170: Type Token: undefined, String: "" (len: 0)
+  Constant #171: Type Token: undefined, String: "" (len: 0)
+  Constant #172: Type Token: undefined, String: "" (len: 0)
+  Constant #173: Type Token: undefined, String: "" (len: 0)
+  Constant #174: Type Token: undefined, String: "" (len: 0)
+  Constant #175: Type Token: undefined, String: "" (len: 0)
+  Constant #176: Type Token: undefined, String: "" (len: 0)
+  Constant #177: Type Token: undefined, String: "" (len: 0)
+  Constant #178: Type Token: undefined, String: "" (len: 0)
+  Constant #179: Type Token: undefined, String: "" (len: 0)
+  Constant #180: Type Token: undefined, String: "" (len: 0)
+  Constant #181: Type Token: undefined, String: "" (len: 0)
+  Constant #182: Type Token: undefined, String: "" (len: 0)
+  Constant #183: Type Token: undefined, String: "" (len: 0)
+  Constant #184: Type Token: undefined, String: "" (len: 0)
+  Constant #185: Type Token: undefined, String: "" (len: 0)
+  Constant #186: Type Token: undefined, String: "" (len: 0)
+  Constant #187: Type Token: undefined, String: "" (len: 0)
+  Constant #188: Type Token: undefined, String: "" (len: 0)
+  Constant #189: Type Token: undefined, String: "" (len: 0)
+  Constant #190: Type Token: undefined, String: "" (len: 0)
+  Constant #191: Type Token: undefined, String: "" (len: 0)
+  Constant #192: Type Token: undefined, String: "" (len: 0)
+  Constant #193: Type Token: undefined, String: "" (len: 0)
+  Constant #194: Type Token: undefined, String: "" (len: 0)
+  Constant #195: Type Token: undefined, String: "" (len: 0)
+  Constant #196: Type Token: undefined, String: "" (len: 0)
+  Constant #197: Type Token: undefined, String: "" (len: 0)
+  Constant #198: Type Token: undefined, String: "" (len: 0)
+  Constant #199: Type Token: undefined, String: "" (len: 0)
+  Constant #200: Type Token: undefined, String: "" (len: 0)
+  Constant #201: Type Token: undefined, String: "" (len: 0)
+  Constant #202: Type Token: undefined, String: "" (len: 0)
+  Constant #203: Type Token: undefined, String: "" (len: 0)
+  Constant #204: Type Token: undefined, String: "" (len: 0)
+  Constant #205: Type Token: undefined, String: "" (len: 0)
+  Constant #206: Type Token: undefined, String: "" (len: 0)
+  Constant #207: Type Token: undefined, String: "" (len: 0)
+  Constant #208: Type Token: undefined, String: "" (len: 0)
+  Constant #209: Type Token: undefined, String: "" (len: 0)
+  Constant #210: Type Token: undefined, String: "" (len: 0)
+  Constant #211: Type Token: undefined, String: "" (len: 0)
+  Constant #212: Type Token: undefined, String: "" (len: 0)
+  Constant #213: Type Token: undefined, String: "" (len: 0)
+  Constant #214: Type Token: undefined, String: "" (len: 0)
+  Constant #215: Type Token: undefined, String: "" (len: 0)
+  Constant #216: Type Token: undefined, String: "" (len: 0)
+  Constant #217: Type Token: undefined, String: "" (len: 0)
+  Constant #218: Type Token: undefined, String: "" (len: 0)
+
+Module: rate_limiter
+
+Module: registry
+  Constant #0: Type Token: 52, String: ".." (len: 2)
+  Constant #1: Type Token: 12, String: "....G2...901.3.1.......-..	0.2.-.....5/6...4...............
+." (len: 66)
+  Constant #2: Type Token: 13, String: "......" (len: 6)
+  Constant #3: Type Token: 6, String: ".	......" (len: 11)
+  Constant #4: Type Token: 10, String: "......" (len: 7)
+  Constant #5: Type Token: 8, String: "...." (len: 4)
+  Constant #6: Type Token: 8, String: "....." (len: 5)
+  Constant #7: Type Token: 7, U64: 218432317247979792
+  Constant #8: Type Token: 7, U64: 577876949083883015
+  Constant #9: Type Token: 9, String: "..." (len: 3)
+  Constant #10: Type Token: 8, U128: 03070807060802060b0c010900020708 (LE bigint)
+  Constant #11: Type Token: 7, String: "......" (len: 6)
+  Constant #12: Type Token: 6, U64: 578157333222457602
+  Constant #13: Type Token: 2, String: "..." (len: 3)
+  Constant #14: Type Token: 7, String: "......" (len: 6)
+  Constant #15: Type Token: 3, String: "..." (len: 3)
+  Constant #16: Type Token: 6, U64: 506662676219823620
+  Constant #17: Type Token: 6, U64: 505258612772504322
+  Constant #18: Type Token: 8, String: ".....
+." (len: 7)
+
+Module: risk_config
+  Constant #0: Type Token: 38, String: ".. ...
+
+.....Y.............................................
+RiskConfig.max_total_ex" (len: 85)
+  Constant #1: Type Token: 112, String: "sure_pct.new.predictrisk_config.set_max_total_exposure_pct...7I..nVP..S.q.......6...h..xQ8...................." (len: 111)
+  Constant #2: Type Token: 4, String: "..........." (len: 11)
+  Constant #3: Type Token: 6, String: "" (len: 0)
+  Constant #4: Type Token: 8, String: ".............
+............	
+............	......................" (len: 6063)
+  Constant #5: Type Token: undefined, String: "" (len: 0)
+  Constant #6: Type Token: undefined, String: "" (len: 0)
+
+Module: strike_matrix
+  Constant #0: Type Token: 39, String: ".........." (len: 10)
+  Constant #1: Type Token: 20, String: "..........................9....." (len: 32)
+  Constant #2: Type Token: 40, String: "........................." (len: 25)
+  Constant #3: Type Token: 3, U8: 0
+
+Module: treasury_config
+
+Module: vault
+  Constant #0: Type Token: 7, String: "...." (len: 4)
+  Constant #1: Type Token: 2, String: "......." (len: 7)
