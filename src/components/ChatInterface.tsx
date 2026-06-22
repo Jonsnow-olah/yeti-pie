@@ -52,26 +52,16 @@ interface CommandHistoryItem {
 }
 
 const PieLogo: React.FC<{ size?: number }> = ({ size = 24 }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="url(#pieHeaderGrad)" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    style={{ filter: 'drop-shadow(0 0 8px rgba(192, 132, 252, 0.6))' }}
-  >
-    <defs>
-      <linearGradient id="pieHeaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="var(--color-secondary)" />
-        <stop offset="100%" stopColor="var(--color-primary)" />
-      </linearGradient>
-    </defs>
-    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-    <path d="M22 12A10 10 0 0 0 12 2v10z" fill="var(--color-secondary-glow)" />
-  </svg>
+  <img 
+    src="/yeti_pie_logo.png" 
+    alt="Yeti P.I.E" 
+    style={{ 
+      width: `${size}px`, 
+      height: `${size}px`, 
+      objectFit: 'contain',
+      filter: 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.4))'
+    }} 
+  />
 );
 
 const formatMessageText = (text: string) => {
@@ -137,6 +127,13 @@ const normalizeSuiAddress = (addr: string): string => {
   }
   return '0x' + clean.padStart(64, '0');
 };
+
+interface HotkeyOption {
+  label: string;
+  command: string;
+  color: 'success' | 'error' | 'secondary' | 'primary';
+  icon: string;
+}
 
 export const ChatInterface: React.FC = () => {
   // Wallet integration hooks
@@ -205,6 +202,9 @@ export const ChatInterface: React.FC = () => {
 
   // Track on-chain oracle settlement status
   const [settledOracles, setSettledOracles] = useState<Record<string, boolean>>({});
+
+  // Dynamic quick-action hotkeys rotation state
+  const [hotkeyIndex, setHotkeyIndex] = useState<number>(0);
 
   // Support state hooks
   const [showSupportPopup, setShowSupportPopup] = useState<boolean>(false);
@@ -483,6 +483,13 @@ export const ChatInterface: React.FC = () => {
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHotkeyIndex(prev => (prev + 3) % 120);
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -812,6 +819,149 @@ export const ChatInterface: React.FC = () => {
     oracleExpiry?: number;
     mappedStrike?: number;
   }>>([]);
+
+  const getSmartHotkeys = (): HotkeyOption[] => {
+    const suiVal = parseFloat(suiBalance.replace(/,/g, '')) || 0;
+    const lofiVal = parseFloat(lofiBalance.replace(/,/g, '')) || 0;
+
+    const list: HotkeyOption[] = [];
+
+    // Helper to format strike nicely for label
+    const labelStrike = (val: number) => {
+      if (val >= 1000) {
+        const kVal = val / 1000;
+        return kVal % 1 === 0 ? `${kVal}k` : `${kVal.toFixed(1).replace(/\.0$/, '')}k`;
+      }
+      return val.toString();
+    };
+
+    // Helper to calculate smart wagers
+    const getSuiWager = (bal: number, pct: number) => {
+      if (bal <= 0) return 1.0;
+      const w = bal * pct;
+      if (bal < 0.1) return parseFloat(bal.toFixed(3));
+      const rounded = parseFloat(w.toFixed(1));
+      return rounded > 0 ? Math.min(rounded, bal) : Math.min(0.1, bal);
+    };
+
+    const getLofiWager = (bal: number, pct: number) => {
+      if (bal <= 0) return 10;
+      const w = bal * pct;
+      const rounded = Math.round(w);
+      return rounded > 0 ? Math.min(rounded, bal) : Math.min(10, bal);
+    };
+
+    const suiWager1 = getSuiWager(suiVal, 0.1);
+    const suiWager2 = getSuiWager(suiVal, 0.25);
+
+    const lofiWager1 = getLofiWager(lofiVal, 0.1);
+    const lofiWager2 = getLofiWager(lofiVal, 0.25);
+
+    // BTC Strikes close to spot (nearest 500)
+    const btcAbove = Math.ceil((btcSpotPrice + 50) / 500) * 500;
+    const btcBelow = Math.floor((btcSpotPrice - 50) / 500) * 500;
+
+    // ETH Strikes close to spot (nearest 50)
+    const ethAbove = Math.ceil((ethSpotPrice + 10) / 50) * 50;
+    const ethBelow = Math.floor((ethSpotPrice - 10) / 50) * 50;
+
+    // 1. Redeem Payouts (if any won positions exist)
+    const wonPositions = positions.filter(p => p.status === 'Settled (Won)');
+    if (wonPositions.length > 0) {
+      list.push({
+        label: `Redeem ${wonPositions.length} Winning Payout${wonPositions.length > 1 ? 's' : ''}`,
+        command: 'redeem payouts',
+        color: 'primary',
+        icon: '💰'
+      });
+    }
+
+    // 2. Active LP Withdrawals
+    const activeLp = positions.find(p => p.type === 'LP' && p.status === 'Active');
+    if (activeLp && activeLp.amount > 0) {
+      list.push({
+        label: `Withdraw ${activeLp.amount} LP`,
+        command: `withdraw ${activeLp.amount} LP`,
+        color: 'secondary',
+        icon: '🚪'
+      });
+    }
+
+    // 3. SUI on BTC Above/Below
+    list.push({
+      label: `Bet ${suiWager1} SUI on BTC Above ${labelStrike(btcAbove)}`,
+      command: `bet ${suiWager1} SUI on BTC above ${btcAbove}`,
+      color: 'success',
+      icon: '📈'
+    });
+    list.push({
+      label: `Bet ${suiWager2} SUI on BTC Below ${labelStrike(btcBelow)}`,
+      command: `bet ${suiWager2} SUI on BTC below ${btcBelow}`,
+      color: 'error',
+      icon: '📉'
+    });
+
+    // 4. LOFI on BTC Above/Below
+    list.push({
+      label: `Bet ${lofiWager1} LOFI on BTC Above ${labelStrike(btcAbove)}`,
+      command: `bet ${lofiWager1} LOFI on BTC above ${btcAbove}`,
+      color: 'success',
+      icon: '📈'
+    });
+    list.push({
+      label: `Bet ${lofiWager2} LOFI on BTC Below ${labelStrike(btcBelow)}`,
+      command: `bet ${lofiWager2} LOFI on BTC below ${btcBelow}`,
+      color: 'error',
+      icon: '📉'
+    });
+
+    // 5. SUI on ETH Above/Below
+    list.push({
+      label: `Bet ${suiWager1} SUI on ETH Above ${labelStrike(ethAbove)}`,
+      command: `bet ${suiWager1} SUI on ETH above ${ethAbove}`,
+      color: 'success',
+      icon: '📈'
+    });
+    list.push({
+      label: `Bet ${suiWager2} SUI on ETH Below ${labelStrike(ethBelow)}`,
+      command: `bet ${suiWager2} SUI on ETH below ${ethBelow}`,
+      color: 'error',
+      icon: '📉'
+    });
+
+    // 6. LOFI on ETH Above/Below
+    list.push({
+      label: `Bet ${lofiWager1} LOFI on ETH Above ${labelStrike(ethAbove)}`,
+      command: `bet ${lofiWager1} LOFI on ETH above ${ethAbove}`,
+      color: 'success',
+      icon: '📈'
+    });
+    list.push({
+      label: `Bet ${lofiWager2} LOFI on ETH Below ${labelStrike(ethBelow)}`,
+      command: `bet ${lofiWager2} LOFI on ETH below ${ethBelow}`,
+      color: 'error',
+      icon: '📉'
+    });
+
+    // 7. Supply LOFI to vault
+    const lofiSupply = Math.max(10, Math.round(lofiVal * 0.25));
+    list.push({
+      label: `Supply ${lofiSupply} LOFI to Vault`,
+      command: `supply ${lofiSupply} LOFI to vault`,
+      color: 'secondary',
+      icon: '💧'
+    });
+
+    // 8. Vault Balance
+    list.push({
+      label: 'Check LP Vault Balance',
+      command: 'vault balance',
+      color: 'primary',
+      icon: '📊'
+    });
+
+    return list;
+  };
 
 
 
@@ -4282,121 +4432,60 @@ export const ChatInterface: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {/* Quick Action Hotkeys */}
           <div className="hotkeys-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '0 4px' }}>
-            <button
-              type="button"
-              onClick={() => executeCommandText("bet 100 LOFI on BTC above 70000")}
-              disabled={isProcessing}
-              style={{
-                background: 'rgba(52, 211, 153, 0.05)',
-                border: '1px solid rgba(52, 211, 153, 0.2)',
-                color: 'var(--color-success)',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: isProcessing ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s',
-                opacity: isProcessing ? 0.6 : 1
-              }}
-              className="hotkey-pill"
-            >
-              📈 Bet 100 LOFI Above 70k
-            </button>
-            <button
-              type="button"
-              onClick={() => executeCommandText("bet 100 LOFI on BTC below 65000")}
-              disabled={isProcessing}
-              style={{
-                background: 'rgba(248, 113, 113, 0.05)',
-                border: '1px solid rgba(248, 113, 113, 0.2)',
-                color: 'var(--color-error)',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: isProcessing ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s',
-                opacity: isProcessing ? 0.6 : 1
-              }}
-              className="hotkey-pill"
-            >
-              📉 Bet 100 LOFI Below 65k
-            </button>
-            <button
-              type="button"
-              onClick={() => executeCommandText("supply 100 LOFI to vault")}
-              disabled={isProcessing}
-              style={{
-                background: 'rgba(192, 132, 252, 0.05)',
-                border: '1px solid rgba(192, 132, 252, 0.2)',
-                color: 'var(--color-secondary)',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: isProcessing ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s',
-                opacity: isProcessing ? 0.6 : 1
-              }}
-              className="hotkey-pill"
-            >
-              💧 Supply 100 LOFI to Vault
-            </button>
-            <button
-              type="button"
-              onClick={() => executeCommandText("withdraw 50 LP")}
-              disabled={isProcessing}
-              style={{
-                background: 'rgba(192, 132, 252, 0.05)',
-                border: '1px solid rgba(192, 132, 252, 0.2)',
-                color: 'var(--color-secondary)',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: isProcessing ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s',
-                opacity: isProcessing ? 0.6 : 1
-              }}
-              className="hotkey-pill"
-            >
-              🚪 Withdraw 50 LP
-            </button>
-            <button
-              type="button"
-              onClick={() => executeCommandText("redeem payouts")}
-              disabled={isProcessing}
-              style={{
-                background: 'rgba(129, 140, 248, 0.05)',
-                border: '1px solid rgba(129, 140, 248, 0.2)',
-                color: 'var(--color-primary)',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: '600',
-                cursor: isProcessing ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s',
-                opacity: isProcessing ? 0.6 : 1
-              }}
-              className="hotkey-pill"
-            >
-              💰 Redeem Payouts
-            </button>
+            {(() => {
+              const smartHotkeys = getSmartHotkeys();
+              const len = smartHotkeys.length;
+              const currentHotkeys = len > 0 ? [
+                smartHotkeys[hotkeyIndex % len],
+                smartHotkeys[(hotkeyIndex + 1) % len],
+                smartHotkeys[(hotkeyIndex + 2) % len]
+              ].filter(Boolean) : [];
+              const bgColors = {
+                success: 'rgba(52, 211, 153, 0.05)',
+                error: 'rgba(248, 113, 113, 0.05)',
+                secondary: 'rgba(192, 132, 252, 0.05)',
+                primary: 'rgba(129, 140, 248, 0.05)'
+              };
+              const borderColors = {
+                success: 'rgba(52, 211, 153, 0.2)',
+                error: 'rgba(248, 113, 113, 0.2)',
+                secondary: 'rgba(192, 132, 252, 0.2)',
+                primary: 'rgba(129, 140, 248, 0.2)'
+              };
+              const textColors = {
+                success: 'var(--color-success)',
+                error: 'var(--color-error)',
+                secondary: 'var(--color-secondary)',
+                primary: 'var(--color-primary)'
+              };
+
+              return currentHotkeys.map((hk, idx) => (
+                <button
+                  key={`${hk.label}-${idx}`}
+                  type="button"
+                  onClick={() => executeCommandText(hk.command)}
+                  disabled={isProcessing}
+                  style={{
+                    background: bgColors[hk.color],
+                    border: `1px solid ${borderColors[hk.color]}`,
+                    color: textColors[hk.color],
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    cursor: isProcessing ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s',
+                    opacity: isProcessing ? 0.6 : 1
+                  }}
+                  className="hotkey-pill"
+                >
+                  {hk.icon} {hk.label}
+                </button>
+              ));
+            })()}
           </div>
 
           {/* Text Input Panel */}

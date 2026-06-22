@@ -9,26 +9,16 @@ interface LandingPageProps {
 }
 
 const PieLogo: React.FC<{ size?: number }> = ({ size = 40 }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="url(#pieGrad)" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    style={{ filter: 'drop-shadow(0 0 12px rgba(192, 132, 252, 0.7))' }}
-  >
-    <defs>
-      <linearGradient id="pieGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="var(--color-secondary)" />
-        <stop offset="100%" stopColor="var(--color-primary)" />
-      </linearGradient>
-    </defs>
-    <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-    <path d="M22 12A10 10 0 0 0 12 2v10z" fill="var(--color-secondary-glow)" />
-  </svg>
+  <img 
+    src="/yeti_pie_logo.png" 
+    alt="Yeti P.I.E" 
+    style={{ 
+      width: `${size}px`, 
+      height: `${size}px`, 
+      objectFit: 'contain',
+      filter: 'drop-shadow(0 0 12px rgba(245, 158, 11, 0.5))'
+    }} 
+  />
 );
 
 const PredictDemoTerminal: React.FC = () => {
@@ -838,7 +828,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
       <header className="landing-header">
         <div className="landing-logo">
           <PieLogo size={36} />
-          <span className="landing-logo-text">PIE</span>
+          <span className="landing-logo-text">Yeti Pie</span>
           <span className="landing-logo-tag">Predict Engine</span>
         </div>
         <div>
@@ -1124,7 +1114,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunch }) => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <PieLogo size={28} />
-          <span style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '-0.01em' }}>PIE</span>
+          <span style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '-0.01em' }}>Yeti Pie</span>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>

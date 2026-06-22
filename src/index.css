@@ -604,6 +604,7 @@ code {
   color: #fff;
 }
 
+
 .header-price-divider {
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   height: 12px;
@@ -612,5 +613,15 @@ code {
 @media (max-width: 992px) {
   .header-prices-container {
     display: none !important;
+  }
+}
+
+.logo-right-img {
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 576px) {
+  .logo-right-img {
+    height: 24px !important;
   }
 }
