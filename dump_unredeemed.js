@@ -1,3 +1,5 @@
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
 async function main() {
   const tableId = '0x3d39708b0ea8b028e9b26a7912b345928bb3b3db20fb489936fcb46824b949d6';
   
@@ -28,9 +30,9 @@ async function main() {
     }
   }
   
-  console.log('Found ' + fields.length + ' positions in table. Querying details for non-zero ones...');
+  console.log(`Found ${fields.length} positions in table. Querying details for non-zero ones...`);
   
-  // Query all fields in batches of 40
+  // Query all fields in batches of 50
   const batchSize = 40;
   for (let i = 0; i < fields.length; i += batchSize) {
     const batch = fields.slice(i, i + batchSize);

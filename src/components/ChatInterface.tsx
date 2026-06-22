@@ -129,6 +129,15 @@ const formatMessageText = (text: string) => {
   });
 };
 
+const normalizeSuiAddress = (addr: string): string => {
+  if (!addr) return '';
+  let clean = addr.toLowerCase().trim();
+  if (clean.startsWith('0x')) {
+    clean = clean.substring(2);
+  }
+  return '0x' + clean.padStart(64, '0');
+};
+
 export const ChatInterface: React.FC = () => {
   // Wallet integration hooks
   const currentAccount = useCurrentAccount();
@@ -493,7 +502,7 @@ export const ChatInterface: React.FC = () => {
     // Check if oracle is settled on-chain if we have the data, otherwise fall back to time
     const isRealOracleSettled = (demoMode || !pos.oracleSviId)
       ? (pos.oracleExpiry ? Date.now() > pos.oracleExpiry : true)
-      : (settledOracles[pos.oracleSviId] === true);
+      : (settledOracles[normalizeSuiAddress(pos.oracleSviId)] === true);
 
     // If the position is won but not redeemed yet, we check if the oracle is settled
     if (pos.status === 'Settled (Won)') {
@@ -881,7 +890,11 @@ export const ChatInterface: React.FC = () => {
   // Check if historical oracles are settled on-chain
   const checkOracleSettlement = async () => {
     if (positions.length === 0) return;
-    const uniqueOracleIds = Array.from(new Set(positions.map(p => p.oracleSviId).filter(Boolean))) as string[];
+    const uniqueOracleIds = Array.from(new Set(
+      positions
+        .map(p => p.oracleSviId ? normalizeSuiAddress(p.oracleSviId) : '')
+        .filter(Boolean)
+    )) as string[];
     if (uniqueOracleIds.length === 0) return;
 
     try {
@@ -905,7 +918,7 @@ export const ChatInterface: React.FC = () => {
             const fields = item.data?.content?.fields;
             if (oid && fields) {
               const isSettled = fields.settlement_price !== null && fields.settlement_price !== undefined;
-              newSettledMap[oid] = isSettled;
+              newSettledMap[normalizeSuiAddress(oid)] = isSettled;
             }
           }
           setSettledOracles(prev => ({
@@ -1138,6 +1151,82 @@ export const ChatInterface: React.FC = () => {
     const interval = setInterval(resolveLiveOracle, 60000);
     return () => clearInterval(interval);
   }, [currentAccount?.address, demoMode]);
+
+  // Poll on-chain settlement status of expired oracles referenced by user positions
+  useEffect(() => {
+    if (demoMode) return;
+
+    let active = true;
+
+    const checkOracleSettlement = async () => {
+      const uniqueOracles = Array.from(new Set(
+        positions
+          .filter(p => p.type !== 'LP' && p.oracleSviId)
+          .map(p => normalizeSuiAddress(p.oracleSviId!))
+      ));
+
+      if (uniqueOracles.length === 0) return;
+
+      try {
+        const response = await fetch('https://fullnode.testnet.sui.io:443', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'sui_multiGetObjects',
+            params: [uniqueOracles, { showContent: true }]
+          })
+        });
+
+        if (!response.ok) return;
+        const resJson = await response.json();
+        const results = resJson.result;
+
+        if (Array.isArray(results) && active) {
+          const updates: Record<string, boolean> = {};
+          let hasUpdates = false;
+
+          for (const item of results) {
+            const oFields = item.data?.content?.fields;
+            if (oFields) {
+              const oid = item.data.objectId;
+              const isSettled = oFields.settlement_price !== undefined && oFields.settlement_price !== null;
+              if (isSettled || oFields.active === false) {
+                updates[normalizeSuiAddress(oid)] = true;
+                hasUpdates = true;
+              }
+            }
+          }
+
+          if (hasUpdates && active) {
+            setSettledOracles(prev => {
+              const next = { ...prev };
+              let changed = false;
+              for (const [k, v] of Object.entries(updates)) {
+                const normalizedK = normalizeSuiAddress(k);
+                if (next[normalizedK] !== v) {
+                  next[normalizedK] = v;
+                  changed = true;
+                }
+              }
+              return changed ? next : prev;
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Error checking oracle settlement:', err);
+      }
+    };
+
+    checkOracleSettlement();
+    const interval = setInterval(checkOracleSettlement, 15000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [positions, demoMode]);
 
   // Save oracleSviId and oracleExpiry when they change
   useEffect(() => {
@@ -1706,9 +1795,9 @@ export const ChatInterface: React.FC = () => {
         try {
           const resolved = await resolveLiveOracle();
           if (resolved) {
-            targetOracleSviId = resolved.oracle_id;
+            targetOracleSviId = normalizeSuiAddress(resolved.oracle_id);
             targetOracleExpiry = resolved.expiry;
-            (parsed as any).oracleSviId = resolved.oracle_id;
+            (parsed as any).oracleSviId = targetOracleSviId;
             (parsed as any).oracleExpiry = resolved.expiry;
           }
         } catch (resErr) {
@@ -1731,30 +1820,73 @@ export const ChatInterface: React.FC = () => {
             targetDirection = wonPos.direction;
             parsed.direction = wonPos.direction;
           }
-          if (wonPos.oracleSviId) targetOracleSviId = wonPos.oracleSviId;
+          if (wonPos.oracleSviId) targetOracleSviId = normalizeSuiAddress(wonPos.oracleSviId);
           if (wonPos.oracleExpiry) targetOracleExpiry = wonPos.oracleExpiry;
 
           // Resolve on-chain size dynamically
           if (!demoMode && simulatedManagerId && targetOracleSviId && targetOracleExpiry && targetStrike && targetDirection) {
             try {
-              const res = await resolveOnChainPositionSizeAndStrike(
+              let res = await resolveOnChainPositionSizeAndStrike(
                 simulatedManagerId,
                 targetOracleSviId,
                 targetOracleExpiry,
                 targetStrike,
                 targetDirection
               );
+              
+              // Dynamic Fallback: if the lookup returned 0 size, it might have been saved with stale/default oracle parameters.
+              // Try resolving with the current active oracle resolved from on-chain/API state.
+              let fallbackUsed = false;
+              let fallbackOracleId = oracleSviId;
+              let fallbackExpiry = oracleExpiry;
+              if (res.size === 0) {
+                try {
+                  const resolved = await resolveLiveOracle();
+                  if (resolved) {
+                    fallbackOracleId = resolved.oracle_id;
+                    fallbackExpiry = resolved.expiry;
+                  }
+                } catch (rErr) {
+                  console.warn('Failed to resolve active oracle inside fallback:', rErr);
+                }
+
+                if (targetOracleSviId !== fallbackOracleId || targetOracleExpiry !== fallbackExpiry) {
+                  console.log('Pre-flight lookup returned 0 size for saved position. Trying fallback with active oracle:', fallbackOracleId);
+                  res = await resolveOnChainPositionSizeAndStrike(
+                    simulatedManagerId,
+                    fallbackOracleId,
+                    fallbackExpiry,
+                    targetStrike,
+                    targetDirection
+                  );
+                  if (res.size > 0) {
+                    fallbackUsed = true;
+                  }
+                }
+              }
+
               if (res.size > 0) {
                 targetAmount = res.size;
                 parsed.amount = res.size;
                 targetStrike = res.mappedStrike;
                 (parsed as any).mappedStrike = res.mappedStrike;
-                // Update local positions list so amount and strike match on-chain
+                
+                const finalOracleSviId = normalizeSuiAddress(res.oracleSviId || (fallbackUsed ? fallbackOracleId : targetOracleSviId));
+                const finalOracleExpiry = res.oracleExpiry || (fallbackUsed ? fallbackExpiry : targetOracleExpiry);
+
+                targetOracleSviId = finalOracleSviId;
+                targetOracleExpiry = finalOracleExpiry;
+                (parsed as any).oracleSviId = finalOracleSviId;
+                (parsed as any).oracleExpiry = finalOracleExpiry;
+
+                // Update local positions list so amount, strike, and oracle ID match on-chain
                 setPositions(prev => prev.map(p => p.id === wonPos.id ? { 
                   ...p, 
                   amount: res.size, 
                   estPayout: res.size * 1.85,
-                  mappedStrike: res.mappedStrike
+                  mappedStrike: res.mappedStrike,
+                  oracleSviId: finalOracleSviId,
+                  oracleExpiry: finalOracleExpiry
                 } : p));
               } else {
                 console.warn('Pre-flight on-chain size check resolved to 0 or failed.');
@@ -1766,9 +1898,9 @@ export const ChatInterface: React.FC = () => {
 
           // Save resolved properties to parsed so they persist in msg.intent
           (parsed as any).positionId = wonPos.id;
-          (parsed as any).mappedStrike = wonPos.mappedStrike;
-          (parsed as any).oracleSviId = wonPos.oracleSviId;
-          (parsed as any).oracleExpiry = wonPos.oracleExpiry;
+          (parsed as any).mappedStrike = targetStrike;
+          (parsed as any).oracleSviId = targetOracleSviId;
+          (parsed as any).oracleExpiry = targetOracleExpiry;
           (parsed as any).wagerAsset = wonPos.wagerAsset || 'SUI';
           (parsed as any).asset = wonPos.asset || 'BTC';
         }
@@ -1989,16 +2121,16 @@ export const ChatInterface: React.FC = () => {
         }
       }
 
-      let targetOracleSviId = oracleSviId;
+      let targetOracleSviId = normalizeSuiAddress(oracleSviId);
       let targetOracleExpiry = oracleExpiry;
 
       if (parsed.action === 'mint' && (parsed.asset || 'BTC').toUpperCase() === 'BTC') {
         try {
           const resolved = await resolveLiveOracle();
           if (resolved) {
-            targetOracleSviId = resolved.oracle_id;
+            targetOracleSviId = normalizeSuiAddress(resolved.oracle_id);
             targetOracleExpiry = resolved.expiry;
-            (parsed as any).oracleSviId = resolved.oracle_id;
+            (parsed as any).oracleSviId = targetOracleSviId;
             (parsed as any).oracleExpiry = resolved.expiry;
           }
         } catch (resErr) {
@@ -2190,7 +2322,7 @@ export const ChatInterface: React.FC = () => {
     expiry: number | string,
     strike: number,
     direction: 'above' | 'below' | string
-  ): Promise<{ size: number; mappedStrike: number }> => {
+  ): Promise<{ size: number; mappedStrike: number; oracleSviId?: string; oracleExpiry?: number }> => {
     try {
       if (!managerId) return { size: 0, mappedStrike: 0 };
       console.log('Querying PredictManager positions table:', { managerId, oracleSviId, expiry, strike, direction });
@@ -2229,7 +2361,7 @@ export const ChatInterface: React.FC = () => {
                 value: {
                   direction: dirVal,
                   expiry: String(expiry),
-                  oracle_id: oracleSviId,
+                  oracle_id: normalizeSuiAddress(oracleSviId),
                   strike: strikeVal
                 }
               }
@@ -2241,10 +2373,15 @@ export const ChatInterface: React.FC = () => {
           if (!dfResult.error) {
             const rawValue = dfResult.result?.data?.content?.fields?.value;
             if (rawValue) {
-              return {
-                size: Number(rawValue) / 1_000_000,
-                mappedStrike: strike
-              };
+              const valNum = Number(rawValue);
+              if (valNum > 0) {
+                return {
+                  size: valNum / 1_000_000,
+                  mappedStrike: strike,
+                  oracleSviId,
+                  oracleExpiry: Number(expiry)
+                };
+              }
             }
           }
         }
@@ -2255,6 +2392,7 @@ export const ChatInterface: React.FC = () => {
       let hasNextPage = true;
       let cursor = null;
       const candidates: any[] = [];
+      const allFields: any[] = [];
 
       while (hasNextPage) {
         const payload = {
@@ -2271,11 +2409,12 @@ export const ChatInterface: React.FC = () => {
         if (!response.ok) break;
         const result = await response.json();
         if (result.result && result.result.data) {
+          allFields.push(...result.result.data);
           for (const f of result.result.data) {
             const val = f.name?.value;
             if (val && 
                 val.oracle_id && oracleSviId &&
-                val.oracle_id.toLowerCase() === oracleSviId.toLowerCase() && 
+                normalizeSuiAddress(val.oracle_id) === normalizeSuiAddress(oracleSviId) && 
                 String(val.expiry) === String(expiry) && 
                 Number(val.direction) === dirVal) {
               candidates.push(f);
@@ -2288,7 +2427,7 @@ export const ChatInterface: React.FC = () => {
         }
       }
 
-      console.log(`Found ${candidates.length} candidate dynamic fields matching criteria.`);
+      console.log(`Found ${candidates.length} candidate dynamic fields matching exact criteria.`);
 
       // Query candidate details to find one with size > 0
       for (const cand of candidates) {
@@ -2310,15 +2449,73 @@ export const ChatInterface: React.FC = () => {
           const value = Number(content.fields.value);
           if (value > 0) {
             const onChainStrike = Number(cand.name.value.strike) / 1_000_000_000;
-            console.log('Successfully matched on-chain position:', {
+            console.log('Successfully matched on-chain position in slow path:', {
               strike: onChainStrike,
               size: value / 1_000_000
             });
             return {
               size: value / 1_000_000,
-              mappedStrike: onChainStrike
+              mappedStrike: onChainStrike,
+              oracleSviId,
+              oracleExpiry: Number(expiry)
             };
           }
+        }
+      }
+
+      // Super Fallback: check all fields in the table for ANY active position matching the direction
+      console.log(`No exact match found. Performing deep scan over all ${allFields.length} fields in positions table...`);
+      for (const field of allFields) {
+        const objPayload = {
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'sui_getObject',
+          params: [field.objectId, { showContent: true }]
+        };
+        try {
+          const response = await fetch('https://fullnode.testnet.sui.io:443', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(objPayload)
+          });
+          if (!response.ok) continue;
+          const objResult = await response.json();
+          const content = objResult.result?.data?.content;
+          if (content && content.fields) {
+            const value = Number(content.fields.value);
+            if (value > 0) {
+              const nameVal = content.fields.name?.fields || content.fields.name;
+              const onChainDir = Number(nameVal?.direction);
+              const onChainOracleId = nameVal?.oracle_id;
+              const onChainExpiry = Number(nameVal?.expiry);
+              const onChainStrike = Number(nameVal?.strike) / 1_000_000_000;
+              
+              console.log('Deep scan found active position:', {
+                direction: onChainDir,
+                oracle_id: onChainOracleId,
+                expiry: onChainExpiry,
+                strike: onChainStrike,
+                size: value / 1_000_000
+              });
+
+              if (onChainDir === dirVal) {
+                console.log('Matched active position by direction in deep scan:', {
+                  strike: onChainStrike,
+                  size: value / 1_000_000,
+                  oracle_id: onChainOracleId,
+                  expiry: onChainExpiry
+                });
+                return {
+                  size: value / 1_000_000,
+                  mappedStrike: onChainStrike,
+                  oracleSviId: onChainOracleId,
+                  oracleExpiry: onChainExpiry
+                };
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('Error fetching details for object in deep scan:', field.objectId, err);
         }
       }
 
@@ -2333,6 +2530,8 @@ export const ChatInterface: React.FC = () => {
   // Sign and submit PTB to Sui Testnet
   const handleExecutePTB = async (msg: ChatMessage) => {
     if (!msg.ptb || executionLoading) return;
+
+    let resolvedExpiry: number | undefined = (msg.intent as any)?.oracleExpiry;
 
     const isMoveAbortWithCode = (errorMsg: string, code: number) => {
       if (!errorMsg.includes('MoveAbort')) return false;
@@ -2351,8 +2550,9 @@ export const ChatInterface: React.FC = () => {
         (!targetStr || p.strike === targetStr) && 
         (!targetDir || p.direction === targetDir)
       );
-      const targetOracleSviId = wonPos?.oracleSviId || (msg.intent as any).oracleSviId || oracleSviId;
-      const targetOracleExpiry = wonPos?.oracleExpiry || (msg.intent as any).oracleExpiry || oracleExpiry;
+      let targetOracleSviId = normalizeSuiAddress(wonPos?.oracleSviId || (msg.intent as any).oracleSviId || oracleSviId);
+      let targetOracleExpiry = wonPos?.oracleExpiry || (msg.intent as any).oracleExpiry || oracleExpiry;
+      resolvedExpiry = targetOracleExpiry;
       let targetStrike = wonPos?.mappedStrike || (msg.intent as any).mappedStrike || msg.intent.strike;
       const targetWagerAsset = wonPos?.wagerAsset || (msg.intent as any).wagerAsset || 'SUI';
       const targetAsset = wonPos?.asset || 'BTC';
@@ -2361,13 +2561,45 @@ export const ChatInterface: React.FC = () => {
       let onChainSize = msg.intent.amount;
       if (!demoMode && simulatedManagerId && targetOracleSviId && targetOracleExpiry && targetStrike && finalDir) {
         setExecutionLoading(true);
-        const res = await resolveOnChainPositionSizeAndStrike(
+        let res = await resolveOnChainPositionSizeAndStrike(
           simulatedManagerId,
           targetOracleSviId,
           targetOracleExpiry,
           targetStrike,
           finalDir
         );
+
+        // Dynamic Fallback: if the lookup returned 0 size, it might have been saved with stale/default oracle parameters.
+        // Try resolving with the current active oracle resolved from on-chain/API state.
+        let fallbackUsed = false;
+        let fallbackOracleId = normalizeSuiAddress(oracleSviId);
+        let fallbackExpiry = oracleExpiry;
+        if (res.size === 0) {
+          try {
+            const resolved = await resolveLiveOracle();
+            if (resolved) {
+              fallbackOracleId = normalizeSuiAddress(resolved.oracle_id);
+              fallbackExpiry = resolved.expiry;
+            }
+          } catch (rErr) {
+            console.warn('Failed to resolve active oracle inside fallback:', rErr);
+          }
+
+          if (normalizeSuiAddress(targetOracleSviId) !== fallbackOracleId || targetOracleExpiry !== fallbackExpiry) {
+            console.log('Pre-flight lookup returned 0 size for saved position. Trying fallback with resolved active oracle:', fallbackOracleId);
+            res = await resolveOnChainPositionSizeAndStrike(
+              simulatedManagerId,
+              fallbackOracleId,
+              fallbackExpiry,
+              targetStrike,
+              finalDir
+            );
+            if (res.size > 0) {
+              fallbackUsed = true;
+            }
+          }
+        }
+
         if (res.size === 0) {
           setMessages(prev => [
             ...prev,
@@ -2384,12 +2616,24 @@ export const ChatInterface: React.FC = () => {
         onChainSize = res.size;
         msg.intent.amount = res.size;
         targetStrike = res.mappedStrike;
+
+        const finalOracleSviId = normalizeSuiAddress(res.oracleSviId || (fallbackUsed ? fallbackOracleId : targetOracleSviId));
+        const finalOracleExpiry = res.oracleExpiry || (fallbackUsed ? fallbackExpiry : targetOracleExpiry);
+
+        targetOracleSviId = finalOracleSviId;
+        targetOracleExpiry = finalOracleExpiry;
+        resolvedExpiry = finalOracleExpiry;
+        (msg.intent as any).oracleSviId = finalOracleSviId;
+        (msg.intent as any).oracleExpiry = finalOracleExpiry;
+
         if (wonPos) {
           setPositions(prev => prev.map(p => p.id === wonPos.id ? { 
             ...p, 
             amount: res.size, 
             estPayout: res.size * 1.85,
-            mappedStrike: res.mappedStrike
+            mappedStrike: res.mappedStrike,
+            oracleSviId: finalOracleSviId,
+            oracleExpiry: finalOracleExpiry
           } : p));
         }
         setExecutionLoading(false);
@@ -2489,8 +2733,8 @@ export const ChatInterface: React.FC = () => {
               asset: msg.intent?.asset || 'BTC',
               direction: msg.intent?.direction as 'above' | 'below',
               wagerAsset: msg.intent?.wagerAsset || 'SUI',
-              oracleSviId: oracleSviId,
-              oracleExpiry: oracleExpiry,
+              oracleSviId: (msg.intent as any).oracleSviId || oracleSviId,
+              oracleExpiry: (msg.intent as any).oracleExpiry || oracleExpiry,
               mappedStrike: mappedStrike
             }
           ]);
@@ -2511,7 +2755,7 @@ export const ChatInterface: React.FC = () => {
             }
           ]);
         } else if (msg.intent && msg.intent.action === 'withdraw') {
-          updateDemoBalance(msg.intent.amount);
+          updateDemoBalance(msg.intent.amount, msg.intent.wagerAsset || 'LOFI');
           const withdrawAmount = msg.intent.amount;
           setPositions(prev => {
             let remainingToDeduct = withdrawAmount;
@@ -2569,7 +2813,7 @@ export const ChatInterface: React.FC = () => {
           const creditAmount = wonPos ? (wonPos.estPayout || (wonPos.amount * 1.85)) : ((msg.intent?.amount || 0) * 1.85);
           
           if (creditAmount > 0) {
-            updateDemoBalance(creditAmount);
+            updateDemoBalance(creditAmount, wonPos?.wagerAsset || msg.intent?.wagerAsset || 'LOFI');
           }
 
           setPositions(prev => prev.map(p => {
@@ -2621,7 +2865,16 @@ export const ChatInterface: React.FC = () => {
           let friendlyError = 'The transaction simulation returned an error. This action cannot be executed at this time.';
           
           if (isMoveAbortWithCode(errorMsg, 9)) {
-            friendlyError = '⏳ **Oracle Not Settled Yet:** The prediction period for this oracle has not been settled on-chain yet. Please wait a few minutes for the oracle price feed to post the final settlement and try again.';
+            const oracleExp = resolvedExpiry || (msg.intent as any)?.oracleExpiry || oracleExpiry;
+            const hoursSinceExpiry = oracleExp ? (Date.now() - Number(oracleExp)) / (1000 * 60 * 60) : 0;
+            if (hoursSinceExpiry > 2) {
+              friendlyError = `⏳ **Oracle Not Settled Yet (Testnet Sync Delay):** The prediction period for this oracle has not been settled on-chain yet. Since this oracle expired on **${new Date(oracleExp!).toLocaleString()}** (more than 2 hours ago), the testnet admin price feed bot appears to be offline or out-of-sync.\n\n💡 **How to proceed:** Please enable **Demo Mode** in the settings panel (left sidebar) to bypass on-chain testnet oracle restrictions and successfully test the redemption flow locally.`;
+            } else if (oracleExp) {
+              const settleTimeStr = new Date(oracleExp).toLocaleTimeString();
+              friendlyError = `⏳ **Oracle Not Settled Yet:** The prediction period for this oracle has not been settled on-chain yet. The oracle is scheduled to settle after **${settleTimeStr}**. Please retry the redemption after **${settleTimeStr}**.`;
+            } else {
+              friendlyError = '⏳ **Oracle Not Settled Yet:** The prediction period for this oracle has not been settled on-chain yet. Please wait a few minutes for the oracle price feed to post the final settlement and try again.';
+            }
           } else if (
             isMoveAbortWithCode(errorMsg, 7) || 
             (isMoveAbortWithCode(errorMsg, 1) && msg.intent?.action === 'mint') ||
@@ -2683,7 +2936,16 @@ export const ChatInterface: React.FC = () => {
         let friendlyError = 'The transaction simulation returned an error. This action cannot be executed at this time.';
         if (errorMsg.includes('MoveAbort') || errorMsg.includes('CoinBalanceUnused') || errorMsg.includes('InsufficientBalance')) {
           if (isMoveAbortWithCode(errorMsg, 9)) {
-            friendlyError = '⏳ **Oracle Not Settled Yet:** The prediction period for this oracle has not been settled on-chain yet. Please wait a few minutes for the oracle price feed to post the final settlement and try again.';
+            const oracleExp = resolvedExpiry || (msg.intent as any)?.oracleExpiry || oracleExpiry;
+            const hoursSinceExpiry = oracleExp ? (Date.now() - Number(oracleExp)) / (1000 * 60 * 60) : 0;
+            if (hoursSinceExpiry > 2) {
+              friendlyError = `⏳ **Oracle Not Settled Yet (Testnet Sync Delay):** The prediction period for this oracle has not been settled on-chain yet. Since this oracle expired on **${new Date(oracleExp!).toLocaleString()}** (more than 2 hours ago), the testnet admin price feed bot appears to be offline or out-of-sync.\n\n💡 **How to proceed:** Please enable **Demo Mode** in the settings panel (left sidebar) to bypass on-chain testnet oracle restrictions and successfully test the redemption flow locally.`;
+            } else if (oracleExp) {
+              const settleTimeStr = new Date(oracleExp).toLocaleTimeString();
+              friendlyError = `⏳ **Oracle Not Settled Yet:** The prediction period for this oracle has not been settled on-chain yet. The oracle is scheduled to settle after **${settleTimeStr}**. Please retry the redemption after **${settleTimeStr}**.`;
+            } else {
+              friendlyError = '⏳ **Oracle Not Settled Yet:** The prediction period for this oracle has not been settled on-chain yet. Please wait a few minutes for the oracle price feed to post the final settlement and try again.';
+            }
           } else if (
             isMoveAbortWithCode(errorMsg, 7) || 
             (isMoveAbortWithCode(errorMsg, 1) && msg.intent?.action === 'mint') ||
@@ -2800,8 +3062,8 @@ export const ChatInterface: React.FC = () => {
             asset: msg.intent?.asset || 'BTC',
             direction: msg.intent?.direction as 'above' | 'below',
             wagerAsset: msg.intent?.wagerAsset || 'SUI',
-            oracleSviId: oracleSviId,
-            oracleExpiry: oracleExpiry,
+            oracleSviId: (msg.intent as any).oracleSviId || oracleSviId,
+            oracleExpiry: (msg.intent as any).oracleExpiry || oracleExpiry,
             mappedStrike: mappedStrike
           }
         ]);
@@ -3908,15 +4170,15 @@ export const ChatInterface: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Action Execution Button */}
+                      {/* Action Execution Button */}
                     {!msg.executed ? (() => {
                       const isRedeem = msg.intent?.action === 'redeem';
                       const oracleExp = (msg.intent as any)?.oracleExpiry;
                       const oracleSvi = (msg.intent as any)?.oracleSviId;
                       const isRealOracleSettled = isRedeem 
-                        ? ((demoMode || !oracleSvi) ? (oracleExp ? Date.now() > oracleExp : true) : (settledOracles[oracleSvi] === true))
+                        ? ((demoMode || !oracleSvi) ? (oracleExp ? Date.now() > oracleExp : true) : (settledOracles[normalizeSuiAddress(oracleSvi)] === true))
                         : true;
-                      const isButtonDisabled = executionLoading || !msg.guardian.passed || !isRealOracleSettled;
+                      const isButtonDisabled = executionLoading || !msg.guardian.passed;
 
                       return (
                         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -3939,11 +4201,10 @@ export const ChatInterface: React.FC = () => {
                           {currentAccount || demoMode ? (
                             <button
                               onClick={() => {
-                                if (!isRealOracleSettled) return;
                                 handleExecutePTB(msg);
                               }}
                               disabled={isButtonDisabled}
-                              className={isRealOracleSettled && msg.guardian.passed ? "button-pulse" : ""}
+                              className={msg.guardian.passed && !executionLoading ? "button-pulse" : ""}
                               style={{
                                 width: '100%',
                                 padding: '12px',
@@ -3951,22 +4212,22 @@ export const ChatInterface: React.FC = () => {
                                 background: isButtonDisabled
                                   ? 'rgba(255,255,255,0.06)'
                                   : msg.guardian.passed 
-                                    ? 'linear-gradient(135deg, var(--color-success), #10b981)' 
+                                    ? (isRealOracleSettled
+                                      ? 'linear-gradient(135deg, var(--color-success), #10b981)' 
+                                      : 'linear-gradient(135deg, #f59e0b, #d97706)')
                                     : 'rgba(255,255,255,0.1)',
-                                border: !isRealOracleSettled ? '1px solid rgba(245, 158, 11, 0.2)' : 'none',
-                                color: !isRealOracleSettled 
-                                  ? '#f59e0b' 
-                                  : msg.guardian.passed 
-                                    ? '#000' 
-                                    : 'var(--text-dim)',
+                                border: !isRealOracleSettled ? '1px solid rgba(245, 158, 11, 0.3)' : 'none',
+                                color: msg.guardian.passed ? '#000' : 'var(--text-dim)',
                                 fontWeight: '700',
-                                cursor: isRealOracleSettled && msg.guardian.passed && !executionLoading ? 'pointer' : 'not-allowed',
+                                cursor: msg.guardian.passed && !executionLoading ? 'pointer' : 'not-allowed',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: '8px',
                                 fontSize: '14px',
-                                boxShadow: isRealOracleSettled && msg.guardian.passed ? '0 4px 15px rgba(52, 211, 153, 0.2)' : 'none',
+                                boxShadow: msg.guardian.passed && !executionLoading
+                                  ? (isRealOracleSettled ? '0 4px 15px rgba(52, 211, 153, 0.2)' : '0 4px 15px rgba(245, 158, 11, 0.2)')
+                                  : 'none',
                                 boxSizing: 'border-box',
                                 opacity: isButtonDisabled ? 0.75 : 1
                               }}
@@ -3979,7 +4240,9 @@ export const ChatInterface: React.FC = () => {
                               ) : (
                                 <>
                                   {!isRealOracleSettled ? (
-                                    <>⏳ Waiting for On-Chain Settlement...</>
+                                    <>
+                                      <Play size={16} /> {isRedeem ? '⏳ Force Redeem (Oracle Unsettled)' : '⏳ Force Execute (Oracle Unsettled)'}
+                                    </>
                                   ) : isRedeem ? (
                                     <>
                                       <Play size={16} /> {demoMode ? '💰 Run Demo Redemption (No Wallet Required)' : '💰 Sign & Redeem Payout'}
@@ -5081,7 +5344,7 @@ export const ChatInterface: React.FC = () => {
             {selectedPosition.type !== 'LP' && (getDynamicStatus(selectedPosition) === 'Settled (Won)' || getDynamicStatus(selectedPosition) === 'Settled (Won - Pending)') ? (() => {
               const isRealOracleSettled = (demoMode || !selectedPosition.oracleSviId)
                 ? (selectedPosition.oracleExpiry ? Date.now() > selectedPosition.oracleExpiry : true)
-                : (settledOracles[selectedPosition.oracleSviId] === true);
+                : (settledOracles[normalizeSuiAddress(selectedPosition.oracleSviId)] === true);
               return (
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
                   {!isRealOracleSettled && (
@@ -5104,10 +5367,6 @@ export const ChatInterface: React.FC = () => {
                   )}
                   <button
                     onClick={() => {
-                      if (!isRealOracleSettled) {
-                        alert(`Please wait for the underlying oracle SVI to settle on-chain first. It is scheduled to settle at ${new Date(selectedPosition.oracleExpiry!).toLocaleTimeString()}.\n\n(MoveAbort Code 9 will occur if you try to redeem before then).`);
-                        return;
-                      }
                       const posToRedeem = selectedPosition;
                       setSelectedPosition(null);
                       executeCommandText("redeem payouts", posToRedeem);
@@ -5118,25 +5377,25 @@ export const ChatInterface: React.FC = () => {
                       padding: '12px',
                       background: isRealOracleSettled 
                         ? 'linear-gradient(135deg, var(--color-success), #10b981)'
-                        : 'linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(245, 158, 11, 0.2))',
+                        : 'linear-gradient(135deg, #f59e0b, #d97706)',
                       border: 'none',
-                      color: isRealOracleSettled ? '#000' : '#f59e0b',
+                      color: '#000',
                       fontWeight: '700',
                       borderRadius: '8px',
-                      cursor: isRealOracleSettled ? 'pointer' : 'not-allowed',
+                      cursor: 'pointer',
                       transition: 'all 0.2s',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      boxShadow: isRealOracleSettled ? '0 4px 15px rgba(52, 211, 153, 0.3)' : 'none',
-                      opacity: isRealOracleSettled ? 1 : 0.8
+                      boxShadow: isRealOracleSettled ? '0 4px 15px rgba(52, 211, 153, 0.3)' : '0 4px 15px rgba(245, 158, 11, 0.2)',
+                      opacity: 1
                     }}
                   >
                     {isRealOracleSettled ? (
                       <>💰 Redeem Payout</>
                     ) : (
-                      <>⏳ Waiting for On-Chain Settlement...</>
+                      <>⏳ Redeem Payout (Pending Settlement)</>
                     )}
                   </button>
                   <button

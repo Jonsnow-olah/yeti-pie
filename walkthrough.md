@@ -108,9 +108,46 @@ When a user clicked on an active LP position in the right panel to show the deta
 
 ---
 
-## 🛠️ 8. Build and WSL Sync Verification
+## 🛡️ 8. Dynamic Oracle Resolution Fallback for Position Redemption
+
+### The Issue:
+When a user placed a bet, the transaction builder resolved the latest active oracle SVI ID and expiry dynamically from on-chain state to compile the PTB. However, when writing the new position into the frontend's local `positions` list state, the code was saving the parameters using the local state variables `oracleSviId` and `oracleExpiry` (which could be stale default fallbacks rather than the actual values resolved for that transaction).
+Consequently, when the user tried to redeem their winning position, the dynamic lookup inside `resolveOnChainPositionSizeAndStrike` was querying the Sui node under the stale oracle ID, returning `size = 0` and failing the pre-flight check with a `Position Not Found On-Chain` error.
+
+### The Fix:
+1. **Dynamic Intent Parameters Mapping**:
+   Updated the post-execution handlers (both in demo-mode and real-mode paths) inside `ChatInterface.tsx` to read the exact oracle ID and expiry from the transaction's message intent:
+   - `oracleSviId: (msg.intent as any).oracleSviId || oracleSviId`
+   - `oracleExpiry: (msg.intent as any).oracleExpiry || oracleExpiry`
+2. **Defensive On-Chain Query Fallback**:
+   Added a fallback checking hook inside both compilation (`executeCommandText`) and execution (`handleExecutePTB`) workflows. If querying the Sui node under the saved position parameters returns a size of `0`, the lookup retries using the current active oracle state variables. If this fallback query succeeds:
+   - It retrieves the correct size and strike.
+   - It automatically updates and corrects the saved `oracleSviId` and `oracleExpiry` parameters of that position inside the local state array.
+   - This allows existing active bets placed prior to this patch to be successfully resolved and redeemed without losing state.
+
+---
+
+## 🛡️ 10. Automatic Oracle Settlement Status Polling (Fixed Pre-flight check abort code 9)
+
+### The Issue:
+When a user placed a bet and it expired, they would attempt to redeem it. However, if the admin price feed bot had not yet posted the final price and deactivated the oracle on-chain, the transaction dry-run simulation (devInspect) would return `MoveAbort` code 9 ("Oracle Not Settled Yet").
+Due to the frontend's local `settledOracles` state never being populated, the frontend could not dynamically detect when an expired oracle was settled on-chain. As a result:
+- Expired winning bets remained permanently in the `Settled (Won - Pending)` status.
+- The "Redeem Payout" button in the position details modal remained disabled, showing a perpetual "Waiting for On-Chain Settlement..." status.
+- If the user bypassed the UI by typing "redeem payouts", the transaction would trigger the dry-run, fail with `MoveAbort 9`, and trigger a pre-flight error warning block in the chat.
+
+### The Fix:
+- Added a background polling effect in `ChatInterface.tsx` that triggers every 15 seconds.
+- It scans the user's active/settled positions, extracts all unique `oracleSviId`s, and queries their on-chain state via a batch RPC request (`sui_multiGetObjects`).
+- If an oracle's fields show a `settlement_price` is present or its `active` status is `false`, the resolver caches it as settled in `settledOracles`.
+- This automatically transitions positions from `Settled (Won - Pending)` to `Settled (Won)` and instantly enables the "Redeem Payout" action button as soon as the oracle is settled on-chain, preventing users from executing failing transaction blocks.
+
+---
+
+## 🛠️ 11. Build and WSL Sync Verification
 
 - The changes have been synchronized directly to the WSL files.
 - Verified production build and typechecking successfully: `npm run build` completes with **zero errors** and outputs production bundle assets.
+
 
 

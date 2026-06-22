@@ -107,3 +107,5 @@
 - [x] Implement localStorage state migrations to clean up old styled HTML elements
 - [x] Fix pre-flight check failure on valid strikes by querying the ask/premium price ratio (index 0) instead of the bid price ratio (index 1) in get_trade_amounts return values.
 - [x] Add styled dynamic "Withdraw [amount] LP" button inside LP position details modal popup to trigger withdraw/unstake flows without state tampering.
+- [x] Fix position redemption pre-flight check failures by resolving positions under the correct dynamic oracle parameters and implementing defensive active oracle query fallbacks.
+- [x] Fix oracle settlement pre-flight checks (MoveAbort 9) by implementing background polling for expired oracle settlement status and caching results in settledOracles state.
